@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verse — lyrics in your notch</title>
+<meta name="description" content="Verse is a macOS menu bar app that shows time-synced lyrics anchored to your MacBook notch. Invisible when idle, tiny when playing, beautiful when you want it.">
+<link rel="icon" type="image/png" href="icon.png">
+<style>
+  :root {
+    --bg: #0a0a0c;
+    --bg-raised: #111114;
+    --border: #232327;
+    --text: #f2f0ec;
+    --text-dim: #a8a6a2;
+    --text-faint: #6b6a68;
+    --accent: #e8b168;
+    --accent-dim: #9c7a4e;
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  a { color: inherit; }
+
+  .wrap {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ---------- Hero / mock notch ---------- */
+
+  .hero {
+    padding-top: 56px;
+    text-align: center;
+  }
+
+  .notch-stage {
+    display: flex;
+    justify-content: center;
+  }
+
+  .notch {
+    background: #000;
+    border-radius: 0 0 18px 18px;
+    padding: 10px 22px 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 18px 40px -18px rgba(0,0,0,0.9);
+    border: 1px solid #1b1b1e;
+    border-top: none;
+    max-width: 92vw;
+  }
+
+  .notch-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #f3cf9a, var(--accent) 60%, var(--accent-dim));
+    flex: none;
+    animation: breathe 3.2s ease-in-out infinite;
+  }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.55; transform: scale(0.92); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  .notch-lyric {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 13px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    background: linear-gradient(90deg, var(--text) 0%, var(--text) 40%, var(--accent) 50%, var(--text-dim) 60%, var(--text-dim) 100%);
+    background-size: 260% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: wipe 3.6s linear infinite;
+  }
+
+  @keyframes wipe {
+    0% { background-position: 100% 0; }
+    100% { background-position: -160% 0; }
+  }
+
+  .hero h1 {
+    margin: 34px 0 10px;
+    font-size: 40px;
+    letter-spacing: -0.02em;
+    font-weight: 650;
+  }
+
+  .hero .tagline {
+    margin: 0 auto;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--accent);
+    font-size: 18px;
+  }
+
+  .hero .desc {
+    margin: 18px auto 0;
+    max-width: 480px;
+    color: var(--text-dim);
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .cta {
+    margin-top: 34px;
+  }
+
+  .btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    background: var(--accent);
+    color: #201404;
+    font-weight: 650;
+    font-size: 15px;
+    padding: 13px 26px;
+    border-radius: 11px;
+    text-decoration: none;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    box-shadow: 0 8px 24px -10px rgba(232, 177, 104, 0.55);
+  }
+
+  .btn-download:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 28px -10px rgba(232, 177, 104, 0.7);
+  }
+
+  .btn-download svg { flex: none; }
+
+  .cta-meta {
+    margin-top: 14px;
+    font-size: 12.5px;
+    color: var(--text-faint);
+    line-height: 1.7;
+  }
+
+  .cta-meta a {
+    color: var(--text-dim);
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 2px;
+  }
+
+  .cta-meta a:hover { color: var(--accent); }
+
+  .gatekeeper-note {
+    margin-top: 4px;
+  }
+
+  /* ---------- How it works strip ---------- */
+
+  .strip {
+    margin-top: 88px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 30px 0;
+  }
+
+  .strip-item {
+    text-align: center;
+    font-size: 14.5px;
+    color: var(--text-dim);
+    padding: 0 8px;
+    line-height: 1.5;
+  }
+
+  .strip-item strong {
+    display: block;
+    color: var(--text);
+    font-size: 15.5px;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+
+  /* ---------- Features ---------- */
+
+  .features {
+    margin-top: 80px;
+  }
+
+  .features h2 {
+    text-align: center;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-faint);
+    font-weight: 600;
+    margin: 0 0 32px;
+  }
+
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .feature {
+    background: var(--bg-raised);
+    padding: 24px 26px;
+  }
+
+  .feature h3 {
+    margin: 0 0 8px;
+    font-size: 15.5px;
+    font-weight: 600;
+  }
+
+  .feature p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* ---------- Footer ---------- */
+
+  footer {
+    margin-top: 90px;
+    padding: 30px 0 60px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-faint);
+  }
+
+  footer .links {
+    margin-top: 10px;
+    display: flex;
+    gap: 18px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  footer a {
+    color: var(--text-dim);
+    text-decoration: none;
+  }
+
+  footer a:hover { color: var(--accent); }
+
+  /* ---------- Mobile ---------- */
+
+  @media (max-width: 640px) {
+    .hero { padding-top: 40px; }
+    .hero h1 { font-size: 30px; }
+    .hero .tagline { font-size: 16px; }
+    .notch-lyric { font-size: 11.5px; }
+    .notch { padding: 9px 16px 10px; gap: 8px; }
+    .strip {
+      grid-template-columns: 1fr;
+      gap: 20px;
+      margin-top: 64px;
+    }
+    .feature-grid { grid-template-columns: 1fr; }
+    .features { margin-top: 60px; }
+    footer { margin-top: 64px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="notch-stage">
+      <div class="notch">
+        <span class="notch-dot"></span>
+        <span class="notch-lyric">and I forget just why I taste</span>
+      </div>
+    </div>
+
+    <h1>Verse</h1>
+    <p class="tagline">Verse — lyrics in your notch.</p>
+    <p class="desc">
+      A macOS menu bar app that shows time-synced lyrics for whatever's
+      playing, anchored right to your MacBook's notch. Invisible when idle,
+      tiny when playing, beautiful when you want it.
+    </p>
+
+    <div class="cta">
+      <a class="btn-download" href="https://github.com/OWNER/verse/releases/latest/download/Verse.zip">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 1.5V10.5M8 10.5L4.5 7M8 10.5L11.5 7" stroke="#201404" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2.5 12.5V13.5C2.5 14.0523 2.94772 14.5 3.5 14.5H12.5C13.0523 14.5 13.5 14.0523 13.5 13.5V12.5" stroke="#201404" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Download for Mac
+      </a>
+      <div class="cta-meta">
+        macOS 14+ · Apple Silicon · free<br>
+        <a href="https://github.com/OWNER/verse/releases/latest">Release notes</a>
+        <div class="gatekeeper-note">
+          Ad-hoc signed — on first launch, right-click the app and choose
+          "Open".
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="strip">
+    <div class="strip-item">
+      <strong>Invisible when idle</strong>
+      Nothing playing, nothing shown. Your notch stays exactly as Apple made it.
+    </div>
+    <div class="strip-item">
+      <strong>Tiny when playing</strong>
+      A sliver of album art and the current line, sized to never collide with your menu bar.
+    </div>
+    <div class="strip-item">
+      <strong>Beautiful when you want it</strong>
+      Hover to expand into a full karaoke panel tinted by the album art.
+    </div>
+  </section>
+
+  <section class="features">
+    <h2>Features</h2>
+    <div class="feature-grid">
+      <div class="feature">
+        <h3>Time-synced lyrics</h3>
+        <p>Pulled from LRCLIB's free, open catalog and matched to the exact track, album, and duration you're hearing.</p>
+      </div>
+      <div class="feature">
+        <h3>Hover for vibe mode</h3>
+        <p>A karaoke panel grows out of the notch, tinted with the dominant color from the album art.</p>
+      </div>
+      <div class="feature">
+        <h3>Click any line to seek</h3>
+        <p>Jump playback straight to a lyric — instant, no scrubbing required.</p>
+      </div>
+      <div class="feature">
+        <h3>Four animation themes</h3>
+        <p>From expressive type-on and word spotlight to a minimal underline tracer — pick your energy.</p>
+      </div>
+      <div class="feature">
+        <h3>Spotify &amp; Apple Music</h3>
+        <p>Works with whichever one you already use, no extra setup.</p>
+      </div>
+      <div class="feature">
+        <h3>Cached offline</h3>
+        <p>Lyrics are saved locally after the first fetch, so repeat plays work without a connection.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div>Free &amp; open source · MIT</div>
+    <div class="links">
+      <a href="https://github.com/OWNER/verse">GitHub</a>
+      <a href="https://lrclib.net">Lyrics by LRCLIB</a>
+    </div>
+  </footer>
+
+</div>
+
+</body>
+</html>
