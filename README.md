@@ -72,6 +72,17 @@ Sources/Verse/
   Settings/                   settings window with live singing preview
 ```
 
+## FAQ
+
+**Q: I get a message saying "Verse is damaged and can't be opened" when trying to run the app.**
+
+A: This happens because macOS Gatekeeper quarantines apps downloaded from the internet that are ad-hoc signed. To fix this, you need to remove the quarantine flag using your terminal:
+
+```sh
+# Replace this path with wherever your Verse.app is located
+xattr -cr /Applications/Verse.app
+```
+
 ## Notes
 
 - The notch panel is a borderless non-activating `NSPanel` above the menu

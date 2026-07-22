@@ -5,3 +5,4 @@ vendor/
 *.xcodeproj
 .swiftpm/
 local_docs/
+Verse.zip
