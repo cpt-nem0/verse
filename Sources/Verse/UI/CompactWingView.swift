@@ -69,10 +69,22 @@ struct CompactWingView: View {
     private func leftWing(t: TimeInterval, pair: DisplayPair) -> some View {
         // Trailing-aligned so the text flows into the notch and continues
         // on the right wing.
-        chunkView(pair.left, t: t, pair: pair)
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.leading, 16)
-            .padding(.trailing, 12)
+        ZStack(alignment: .trailing) {
+            switch model.content {
+            case .synced:
+                chunkView(pair.left, t: t, pair: pair)
+            case .plain, .none, .instrumental:
+                // No synced lyrics: show the track title, static.
+                Text(model.now.map { "\($0.title) — \($0.artist)" } ?? "")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.white.opacity(0.8))
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .padding(.leading, 16)
+        .padding(.trailing, 12)
     }
 
     // MARK: - Right wing: second chunk of the pair (or fallback title)
@@ -83,13 +95,10 @@ struct CompactWingView: View {
             switch model.content {
             case .synced:
                 chunkView(pair.right, t: t, pair: pair)
-            case .plain, .none, .instrumental:
-                // No synced lyrics: show the track title, static.
-                Text(model.now.map { "\($0.title) — \($0.artist)" } ?? "")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.white.opacity(0.8))
-                    .lineLimit(1)
-                    .truncationMode(.tail)
+            case .instrumental:
+                BreathingDots(color: .white.opacity(0.8), t: t)
+            case .plain, .none:
+                EmptyView()
             }
         }
         .padding(.leading, 12)

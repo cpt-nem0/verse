@@ -101,7 +101,7 @@ struct ThemePreview: View {
     let theme: LyricTheme
     let palette: Palette
 
-    private static let demoText = "And the stars look very different today"
+    private static let demoText = "Wubba lubba dub dub!"
     private static let loopLength: TimeInterval = 4.5
     private static let demoWords: [WordTiming] = LyricsTimeline.synthesizeWords(
         text: demoText, start: 0.4, end: 3.9

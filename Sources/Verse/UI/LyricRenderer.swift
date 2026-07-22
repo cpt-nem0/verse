@@ -77,9 +77,9 @@ struct LyricLineRenderer: View {
     }
 
     private var activeWordIndex: Int? {
-        guard t >= start else { return nil }
+        guard t >= start && t < end else { return nil }
         for (i, w) in words.enumerated() where t >= w.start && t < w.end { return i }
-        return t >= end ? words.count - 1 : nil
+        return nil
     }
 
     // MARK: - Theme 3 (default): light wipe
@@ -89,6 +89,8 @@ struct LyricLineRenderer: View {
     private var wipe: some View {
         let p = sweepProgress
         let feather = 0.10
+        // Map p from [0, 1] to [-feather, 1+feather] so the edges are perfectly clear/white
+        let mapped = p * (1.0 + feather * 2) - feather
         return ZStack {
             lineText.foregroundStyle(style.dim)
             lineText
@@ -97,8 +99,8 @@ struct LyricLineRenderer: View {
                     LinearGradient(
                         stops: [
                             .init(color: .white, location: 0),
-                            .init(color: .white, location: max(p - feather, 0)),
-                            .init(color: .clear, location: min(p + feather, 1)),
+                            .init(color: .white, location: mapped - feather),
+                            .init(color: .clear, location: mapped + feather),
                             .init(color: .clear, location: 1)
                         ],
                         startPoint: .leading, endPoint: .trailing
@@ -153,6 +155,7 @@ struct LyricLineRenderer: View {
                         .fill(style.accent)
                         .frame(width: dash, height: 1.8)
                         .offset(x: (geo.size.width - dash) * p, y: 4)
+                        .opacity(p > 0.0 ? 1 : 0)
                 }
                 .frame(height: 2)
             }

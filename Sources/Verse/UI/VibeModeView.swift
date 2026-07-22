@@ -127,41 +127,52 @@ struct VibeModeView: View {
         let idx = timeline.lineIndex(at: t)
         let inBreak = timeline.isInstrumentalBreak(at: t)
         let lines = timeline.lines
+        let baseIdx = idx ?? firstLineIndex(lines: lines, after: t) ?? 0
 
-        VStack(spacing: 7) {
-            neighborLine(index: idx.map { $0 - 1 }, lines: lines)
+        ZStack {
+            // Anchor for the compact↔expanded morph
+            Color.clear
+                .frame(height: 34)
+                .matchedGeometryEffect(id: "currentLyric", in: morph, isSource: model.uiState == .expanded)
 
-            ZStack {
-                if inBreak {
-                    instrumentalIndicator(t: t, nextStart: timeline.nextLineStart(after: t))
+            if inBreak {
+                instrumentalIndicator(t: t, nextStart: timeline.nextLineStart(after: t))
+                    .transition(.opacity)
+            } else {
+                let window = (baseIdx - 1) ... (baseIdx + 1)
+                ForEach(window, id: \.self) { i in
+                    if lines.indices.contains(i), !lines[i].isEmpty {
+                        let offset = i - baseIdx
+                        let line = lines[i]
+                        
+                        ZStack {
+                            LyricLineRenderer(
+                                words: line.words,
+                                text: line.text,
+                                start: line.start,
+                                end: line.end,
+                                theme: model.theme,
+                                style: .vibe(model.palette),
+                                t: t
+                            )
+                            .frame(height: 34)
+                            .opacity(offset == 0 ? 1 : 0)
+                            .scaleEffect(offset == 0 ? 1 : 0.95)
+                            
+                            neighborLine(line: line)
+                                .opacity(offset == 0 ? 0 : 1)
+                                .scaleEffect(offset == 0 ? 1.05 : 1)
+                        }
+                        .offset(y: CGFloat(offset) * 33.0)
+                        .zIndex(offset == 0 ? 1 : 0)
                         .transition(.opacity)
-                } else if let i = idx {
-                    let line = lines[i]
-                    LyricLineRenderer(
-                        words: line.words,
-                        text: line.text,
-                        start: line.start,
-                        end: line.end,
-                        theme: model.theme,
-                        style: .vibe(model.palette),
-                        t: t
-                    )
-                    .id(line.id)
-                    .transition(.asymmetric(
-                        insertion: .move(edge: .bottom).combined(with: .opacity),
-                        removal: .move(edge: .top).combined(with: .opacity)
-                    ))
-                    .onTapGesture { model.seek(to: line.start + 0.01) }
+                    }
                 }
             }
-            .frame(height: 34)
-            // Stable container carries the morph; source only while expanded.
-            .matchedGeometryEffect(id: "currentLyric", in: morph, isSource: model.uiState == .expanded)
-            .animation(.spring(response: 0.45, dampingFraction: 0.85), value: idx)
-
-            neighborLine(index: idx.map { $0 + 1 } ?? firstLineIndex(lines: lines, after: t), lines: lines)
         }
+        .frame(height: 84)
         .frame(maxWidth: .infinity)
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: idx)
     }
 
     private func firstLineIndex(lines: [LyricLine], after t: TimeInterval) -> Int? {
@@ -169,13 +180,8 @@ struct VibeModeView: View {
     }
 
     @ViewBuilder
-    private func neighborLine(index: Int?, lines: [LyricLine]) -> some View {
-        let line: LyricLine? = {
-            guard let index, lines.indices.contains(index) else { return nil }
-            let l = lines[index]
-            return l.isEmpty ? nil : l
-        }()
-        Text(line?.text ?? " ")
+    private func neighborLine(line: LyricLine) -> some View {
+        Text(line.text)
             .font(.system(size: 14, design: .serif).italic())
             .foregroundStyle(model.palette.mid.opacity(0.35))
             .lineLimit(1)
@@ -183,9 +189,8 @@ struct VibeModeView: View {
             .frame(height: 18)
             .contentShape(Rectangle())
             .onTapGesture {
-                if let line { model.seek(to: line.start + 0.01) }
+                model.seek(to: line.start + 0.01)
             }
-            .animation(.easeInOut(duration: 0.25), value: line?.id)
     }
 
     /// Scroll-to-browse: full lyrics list; snaps back after 4s idle.

@@ -3,18 +3,18 @@ import SwiftUI
 import Combine
 
 enum LyricTheme: String, CaseIterable, Identifiable {
+    case lightWipe = "lightWipe"    // default
     case typeOn = "typeOn"          // most expressive
     case spotlight = "spotlight"
-    case lightWipe = "lightWipe"    // default
     case tracer = "tracer"          // most minimal
 
     var id: String { rawValue }
 
     var displayName: String {
         switch self {
+        case .lightWipe: return "Light wipe"
         case .typeOn: return "Type-on"
         case .spotlight: return "Spotlight"
-        case .lightWipe: return "Light wipe"
         case .tracer: return "Tracer"
         }
     }
