@@ -5,6 +5,14 @@ playing song, anchored to the MacBook notch. Invisible when idle, tiny when
 playing, beautiful when you want it. Text never moves — only light moves
 through it.
 
+## Installation
+
+The easiest way to install Verse without triggering macOS Gatekeeper warnings is via terminal:
+
+```sh
+curl -L -o Verse.zip https://github.com/cpt-nem0/verse/releases/latest/download/Verse.zip && unzip Verse.zip -d /Applications
+```
+
 ## Build & run
 
 Requirements: macOS 14+, Xcode command line tools, `cmake` (`brew install cmake`), `git`.
