@@ -1,386 +1,832 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Verse — lyrics in your notch</title>
-<meta name="description" content="Verse is a macOS menu bar app that shows time-synced lyrics anchored to your MacBook notch. Invisible when idle, tiny when playing, beautiful when you want it.">
-<link rel="icon" type="image/png" href="icon.png">
-<style>
-  :root {
-    --bg: #0a0a0c;
-    --bg-raised: #111114;
-    --border: #232327;
-    --text: #f2f0ec;
-    --text-dim: #a8a6a2;
-    --text-faint: #6b6a68;
-    --accent: #e8b168;
-    --accent-dim: #9c7a4e;
-    --serif: Georgia, 'Times New Roman', serif;
-    --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verse — lyrics in your notch</title>
+    <meta
+      name="description"
+      content="Verse is a macOS menu bar app that shows time-synced lyrics anchored to your MacBook notch. Invisible when idle, tiny when playing, beautiful when you want it."
+    />
+    <link rel="icon" type="image/png" href="icon.png" />
+    <style>
+      :root {
+        --bg: #0a0a0c;
+        --bg-card: rgba(255, 255, 255, 0.025);
+        --border: rgba(255, 255, 255, 0.08);
+        --text: #f2f0ec;
+        --text-dim: #a8a6a2;
+        --text-faint: #6b6a68;
+        --accent: #e8b168;
+        --accent-soft: rgba(232, 177, 104, 0.4);
+        --teal: #3a7d78;
+        --violet: #5d4a78;
+        --serif: Georgia, "Times New Roman", serif;
+        --sans:
+          -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue",
+          Helvetica, Arial, sans-serif;
+      }
 
-  * { box-sizing: border-box; }
+      * {
+        box-sizing: border-box;
+      }
 
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    -webkit-font-smoothing: antialiased;
-  }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--sans);
+        -webkit-font-smoothing: antialiased;
+      }
 
-  body {
-    overflow-x: hidden;
-  }
+      body {
+        overflow-x: hidden;
+        position: relative;
+      }
 
-  a { color: inherit; }
+      a {
+        color: inherit;
+      }
 
-  .wrap {
-    max-width: 880px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
+      .wrap {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 0 24px;
+        position: relative;
+        z-index: 2;
+      }
 
-  /* ---------- Hero / mock notch ---------- */
+      /* ---------- Ambient background glow ---------- */
 
-  .hero {
-    padding-top: 56px;
-    text-align: center;
-  }
+      .ambient {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
 
-  .notch-stage {
-    display: flex;
-    justify-content: center;
-  }
+      .blob {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(90px);
+        will-change: transform;
+      }
 
-  .notch {
-    background: #000;
-    border-radius: 0 0 18px 18px;
-    padding: 10px 22px 12px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 18px 40px -18px rgba(0,0,0,0.9);
-    border: 1px solid #1b1b1e;
-    border-top: none;
-    max-width: 92vw;
-  }
+      .blob-amber {
+        width: 560px;
+        height: 560px;
+        top: -180px;
+        left: 50%;
+        margin-left: -280px;
+        background: radial-gradient(
+          circle,
+          rgba(232, 177, 104, 0.16),
+          transparent 65%
+        );
+        animation: drift-a 46s ease-in-out infinite alternate;
+      }
 
-  .notch-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 30%, #f3cf9a, var(--accent) 60%, var(--accent-dim));
-    flex: none;
-    animation: breathe 3.2s ease-in-out infinite;
-  }
+      .blob-teal {
+        width: 640px;
+        height: 640px;
+        top: 34%;
+        left: -260px;
+        background: radial-gradient(
+          circle,
+          rgba(58, 125, 120, 0.11),
+          transparent 65%
+        );
+        animation: drift-b 58s ease-in-out infinite alternate;
+      }
 
-  @keyframes breathe {
-    0%, 100% { opacity: 0.55; transform: scale(0.92); }
-    50% { opacity: 1; transform: scale(1); }
-  }
+      .blob-violet {
+        width: 600px;
+        height: 600px;
+        bottom: -220px;
+        right: -220px;
+        background: radial-gradient(
+          circle,
+          rgba(93, 74, 120, 0.12),
+          transparent 65%
+        );
+        animation: drift-c 52s ease-in-out infinite alternate;
+      }
 
-  .notch-lyric {
-    font-family: var(--serif);
-    font-style: italic;
-    font-size: 13px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    letter-spacing: 0.01em;
-    background: linear-gradient(90deg, var(--text) 0%, var(--text) 40%, var(--accent) 50%, var(--text-dim) 60%, var(--text-dim) 100%);
-    background-size: 260% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: wipe 3.6s linear infinite;
-  }
+      @keyframes drift-a {
+        from {
+          transform: translate(-60px, 0) scale(1);
+        }
+        to {
+          transform: translate(70px, 50px) scale(1.15);
+        }
+      }
+      @keyframes drift-b {
+        from {
+          transform: translate(0, -50px) scale(1.05);
+        }
+        to {
+          transform: translate(110px, 70px) scale(0.92);
+        }
+      }
+      @keyframes drift-c {
+        from {
+          transform: translate(40px, 30px) scale(0.95);
+        }
+        to {
+          transform: translate(-80px, -60px) scale(1.12);
+        }
+      }
 
-  @keyframes wipe {
-    0% { background-position: 100% 0; }
-    100% { background-position: -160% 0; }
-  }
+      /* ---------- Distant lyric echoes ---------- */
 
-  .hero h1 {
-    margin: 34px 0 10px;
-    font-size: 40px;
-    letter-spacing: -0.02em;
-    font-weight: 650;
-  }
+      .echoes {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        overflow: hidden;
+        pointer-events: none;
+      }
 
-  .hero .tagline {
-    margin: 0 auto;
-    font-family: var(--serif);
-    font-style: italic;
-    color: var(--accent);
-    font-size: 18px;
-  }
+      .echo {
+        position: absolute;
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--text);
+        white-space: nowrap;
+        animation: echo-drift 40s ease-in-out infinite alternate;
+      }
 
-  .hero .desc {
-    margin: 18px auto 0;
-    max-width: 480px;
-    color: var(--text-dim);
-    font-size: 16px;
-    line-height: 1.6;
-  }
+      .echo-1 {
+        top: 150px;
+        left: -2%;
+        font-size: 44px;
+        opacity: 0.035;
+        animation-duration: 44s;
+      }
+      .echo-2 {
+        top: 320px;
+        right: -4%;
+        font-size: 30px;
+        opacity: 0.05;
+        animation-duration: 56s;
+        animation-delay: -18s;
+      }
+      .echo-3 {
+        top: 620px;
+        left: 4%;
+        font-size: 24px;
+        opacity: 0.045;
+        animation-duration: 48s;
+        animation-delay: -30s;
+      }
+      .echo-4 {
+        top: 900px;
+        right: 2%;
+        font-size: 52px;
+        opacity: 0.03;
+        animation-duration: 62s;
+        animation-delay: -8s;
+      }
+      .echo-5 {
+        top: 1250px;
+        left: -3%;
+        font-size: 34px;
+        opacity: 0.04;
+        animation-duration: 52s;
+        animation-delay: -40s;
+      }
 
-  .cta {
-    margin-top: 34px;
-  }
+      @keyframes echo-drift {
+        from {
+          transform: translate(0, 0);
+        }
+        to {
+          transform: translate(26px, -18px);
+        }
+      }
 
-  .btn-download {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    background: var(--accent);
-    color: #201404;
-    font-weight: 650;
-    font-size: 15px;
-    padding: 13px 26px;
-    border-radius: 11px;
-    text-decoration: none;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    box-shadow: 0 8px 24px -10px rgba(232, 177, 104, 0.55);
-  }
+      /* ---------- Hero / mock notch ---------- */
 
-  .btn-download:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 12px 28px -10px rgba(232, 177, 104, 0.7);
-  }
+      .hero {
+        padding-top: 56px;
+        text-align: center;
+      }
 
-  .btn-download svg { flex: none; }
+      .notch-stage {
+        display: flex;
+        justify-content: center;
+        position: relative;
+      }
 
-  .cta-meta {
-    margin-top: 14px;
-    font-size: 12.5px;
-    color: var(--text-faint);
-    line-height: 1.7;
-  }
+      /* glow pooling under the notch, like light leaking from the screen edge */
+      .notch-stage::before {
+        content: "";
+        position: absolute;
+        top: -60px;
+        width: 420px;
+        height: 150px;
+        background: radial-gradient(
+          ellipse at center top,
+          rgba(232, 177, 104, 0.14),
+          transparent 70%
+        );
+        pointer-events: none;
+        animation: notch-glow 5s ease-in-out infinite;
+      }
 
-  .cta-meta a {
-    color: var(--text-dim);
-    text-decoration: underline;
-    text-decoration-color: var(--border);
-    text-underline-offset: 2px;
-  }
+      @keyframes notch-glow {
+        0%,
+        100% {
+          opacity: 0.7;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
 
-  .cta-meta a:hover { color: var(--accent); }
+      .notch {
+        background: #000;
+        border-radius: 0 0 18px 18px;
+        padding: 10px 22px 12px;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow:
+          0 18px 40px -18px rgba(0, 0, 0, 0.9),
+          0 4px 30px -6px rgba(232, 177, 104, 0.12);
+        border: 1px solid #1b1b1e;
+        border-top: none;
+        max-width: 92vw;
+        position: relative;
+        transition:
+          padding 0.45s cubic-bezier(0.34, 1.3, 0.5, 1),
+          border-radius 0.45s cubic-bezier(0.34, 1.3, 0.5, 1),
+          box-shadow 0.45s ease;
+        cursor: default;
+      }
 
-  .gatekeeper-note {
-    margin-top: 4px;
-  }
+      /* tease vibe mode: notch melts downward slightly on hover */
+      .notch:hover {
+        padding: 14px 28px 20px;
+        border-radius: 0 0 24px 24px;
+        box-shadow:
+          0 22px 48px -18px rgba(0, 0, 0, 0.95),
+          0 6px 40px -6px rgba(232, 177, 104, 0.22);
+      }
 
-  /* ---------- How it works strip ---------- */
+      .notch-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: radial-gradient(
+          circle at 35% 30%,
+          #f3cf9a,
+          var(--accent) 60%,
+          #9c7a4e
+        );
+        flex: none;
+        animation: breathe 3.2s ease-in-out infinite;
+      }
 
-  .strip {
-    margin-top: 88px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    padding: 30px 0;
-  }
+      @keyframes breathe {
+        0%,
+        100% {
+          opacity: 0.55;
+          transform: scale(0.92);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
 
-  .strip-item {
-    text-align: center;
-    font-size: 14.5px;
-    color: var(--text-dim);
-    padding: 0 8px;
-    line-height: 1.5;
-  }
+      .notch-lyric {
+        font-family: var(--serif);
+        font-style: italic;
+        font-size: 13px;
+        white-space: nowrap;
+        letter-spacing: 0.01em;
+        background: linear-gradient(
+          90deg,
+          var(--text) 0%,
+          var(--text) 38%,
+          var(--accent) 50%,
+          var(--text-faint) 62%,
+          var(--text-faint) 100%
+        );
+        background-size: 300% 100%;
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: wipe 4s linear infinite;
+      }
 
-  .strip-item strong {
-    display: block;
-    color: var(--text);
-    font-size: 15.5px;
-    margin-bottom: 4px;
-    font-weight: 600;
-  }
+      /* wipe sweeps through, then the line breathes out at the end of each cycle */
+      @keyframes wipe {
+        0% {
+          background-position: 100% 0;
+          opacity: 0;
+        }
+        6% {
+          opacity: 1;
+        }
+        82% {
+          background-position: -100% 0;
+          opacity: 1;
+        }
+        94% {
+          opacity: 0;
+        }
+        100% {
+          background-position: -100% 0;
+          opacity: 0;
+        }
+      }
 
-  /* ---------- Features ---------- */
+      .hero h1 {
+        margin: 34px 0 10px;
+        font-size: 44px;
+        letter-spacing: -0.02em;
+        font-weight: 650;
+        text-shadow: 0 0 60px rgba(232, 177, 104, 0.25);
+      }
 
-  .features {
-    margin-top: 80px;
-  }
+      .hero .tagline {
+        margin: 0 auto;
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--accent);
+        font-size: 19px;
+      }
 
-  .features h2 {
-    text-align: center;
-    font-size: 13px;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--text-faint);
-    font-weight: 600;
-    margin: 0 0 32px;
-  }
+      .hero .desc {
+        margin: 18px auto 0;
+        max-width: 480px;
+        color: var(--text-dim);
+        font-size: 16px;
+        line-height: 1.6;
+      }
 
-  .feature-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1px;
-    background: var(--border);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    overflow: hidden;
-  }
+      .cta {
+        margin-top: 34px;
+      }
 
-  .feature {
-    background: var(--bg-raised);
-    padding: 24px 26px;
-  }
+      .btn-download {
+        display: inline-flex;
+        align-items: center;
+        gap: 9px;
+        background: linear-gradient(180deg, #f0c07c, var(--accent));
+        color: #201404;
+        font-weight: 650;
+        font-size: 15px;
+        padding: 13px 26px;
+        border-radius: 11px;
+        text-decoration: none;
+        transition:
+          transform 0.15s ease,
+          box-shadow 0.15s ease;
+        box-shadow: 0 8px 24px -10px rgba(232, 177, 104, 0.55);
+      }
 
-  .feature h3 {
-    margin: 0 0 8px;
-    font-size: 15.5px;
-    font-weight: 600;
-  }
+      .btn-download:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 32px -8px rgba(232, 177, 104, 0.75);
+      }
 
-  .feature p {
-    margin: 0;
-    font-size: 14px;
-    color: var(--text-dim);
-    line-height: 1.6;
-  }
+      .btn-download svg {
+        flex: none;
+      }
 
-  /* ---------- Footer ---------- */
+      .cta-meta {
+        margin-top: 14px;
+        font-size: 12.5px;
+        color: var(--text-faint);
+        line-height: 1.7;
+      }
 
-  footer {
-    margin-top: 90px;
-    padding: 30px 0 60px;
-    border-top: 1px solid var(--border);
-    text-align: center;
-    font-size: 13px;
-    color: var(--text-faint);
-  }
+      .cta-meta a {
+        color: var(--text-dim);
+        text-decoration: underline;
+        text-decoration-color: var(--border);
+        text-underline-offset: 2px;
+      }
 
-  footer .links {
-    margin-top: 10px;
-    display: flex;
-    gap: 18px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
+      .cta-meta a:hover {
+        color: var(--accent);
+      }
 
-  footer a {
-    color: var(--text-dim);
-    text-decoration: none;
-  }
+      .gatekeeper-note {
+        margin-top: 4px;
+      }
 
-  footer a:hover { color: var(--accent); }
+      /* ---------- How it works strip ---------- */
 
-  /* ---------- Mobile ---------- */
+      .strip {
+        margin-top: 92px;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+        border-top: 1px solid var(--border);
+        border-bottom: 1px solid var(--border);
+        padding: 30px 0;
+      }
 
-  @media (max-width: 640px) {
-    .hero { padding-top: 40px; }
-    .hero h1 { font-size: 30px; }
-    .hero .tagline { font-size: 16px; }
-    .notch-lyric { font-size: 11.5px; }
-    .notch { padding: 9px 16px 10px; gap: 8px; }
-    .strip {
-      grid-template-columns: 1fr;
-      gap: 20px;
-      margin-top: 64px;
-    }
-    .feature-grid { grid-template-columns: 1fr; }
-    .features { margin-top: 60px; }
-    footer { margin-top: 64px; }
-  }
-</style>
-</head>
-<body>
+      .strip-item {
+        text-align: center;
+        font-size: 14.5px;
+        color: var(--text-dim);
+        padding: 0 8px;
+        line-height: 1.5;
+      }
 
-<div class="wrap">
+      .strip-item strong {
+        display: block;
+        color: var(--text);
+        font-size: 15.5px;
+        margin-bottom: 4px;
+        font-weight: 600;
+      }
 
-  <section class="hero">
-    <div class="notch-stage">
-      <div class="notch">
-        <span class="notch-dot"></span>
-        <span class="notch-lyric">and I forget just why I taste</span>
-      </div>
+      /* ---------- Features ---------- */
+
+      .features {
+        margin-top: 84px;
+      }
+
+      .features h2 {
+        text-align: center;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        color: var(--text-faint);
+        font-weight: 600;
+        margin: 0 0 32px;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .feature {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 24px 26px;
+        transition:
+          transform 0.25s ease,
+          border-color 0.25s ease,
+          box-shadow 0.25s ease;
+      }
+
+      .feature:hover {
+        transform: translateY(-3px);
+        border-color: var(--accent-soft);
+        box-shadow:
+          0 12px 34px -16px rgba(232, 177, 104, 0.35),
+          inset 0 1px 0 rgba(232, 177, 104, 0.12);
+      }
+
+      .feature h3 {
+        margin: 0 0 8px;
+        font-size: 15.5px;
+        font-weight: 600;
+      }
+
+      .feature p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-dim);
+        line-height: 1.6;
+      }
+
+      /* ---------- Scroll reveal (activated only when JS adds .js) ---------- */
+
+      .js .reveal {
+        opacity: 0;
+        transform: translateY(16px);
+        transition:
+          opacity 0.6s ease,
+          transform 0.6s cubic-bezier(0.22, 0.9, 0.3, 1);
+      }
+
+      .js .reveal.in {
+        opacity: 1;
+        transform: none;
+      }
+
+      /* ---------- Footer ---------- */
+
+      footer {
+        margin-top: 96px;
+        padding: 30px 0 60px;
+        border-top: 1px solid var(--border);
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-faint);
+      }
+
+      footer .footer-lyric {
+        font-family: var(--serif);
+        font-style: italic;
+        color: var(--text-faint);
+        opacity: 0.7;
+        font-size: 14px;
+        margin-bottom: 18px;
+      }
+
+      footer .links {
+        margin-top: 10px;
+        display: flex;
+        gap: 18px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      footer a {
+        color: var(--text-dim);
+        text-decoration: none;
+      }
+
+      footer a:hover {
+        color: var(--accent);
+      }
+
+      /* ---------- Reduced motion ---------- */
+
+      @media (prefers-reduced-motion: reduce) {
+        .blob,
+        .echo,
+        .notch-dot,
+        .notch-stage::before {
+          animation: none !important;
+        }
+        .notch-lyric {
+          animation: none !important;
+          background: none;
+          -webkit-text-fill-color: currentColor;
+          color: var(--text-dim);
+        }
+        .notch,
+        .feature,
+        .btn-download {
+          transition: none !important;
+        }
+        .feature:hover,
+        .btn-download:hover {
+          transform: none;
+        }
+        .js .reveal {
+          opacity: 1 !important;
+          transform: none !important;
+          transition: none !important;
+        }
+      }
+
+      /* ---------- Mobile ---------- */
+
+      @media (max-width: 640px) {
+        .hero {
+          padding-top: 40px;
+        }
+        .hero h1 {
+          font-size: 32px;
+        }
+        .hero .tagline {
+          font-size: 16px;
+        }
+        .notch-lyric {
+          font-size: 11.5px;
+        }
+        .notch {
+          padding: 9px 16px 10px;
+          gap: 8px;
+        }
+        .notch:hover {
+          padding: 9px 16px 10px;
+          border-radius: 0 0 18px 18px;
+        }
+        .notch-stage::before {
+          width: 280px;
+        }
+        .strip {
+          grid-template-columns: 1fr;
+          gap: 20px;
+          margin-top: 64px;
+        }
+        .feature-grid {
+          grid-template-columns: 1fr;
+        }
+        .features {
+          margin-top: 60px;
+        }
+        footer {
+          margin-top: 64px;
+        }
+        .echo {
+          display: none;
+        }
+        .blob {
+          filter: blur(70px);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="ambient" aria-hidden="true">
+      <div class="blob blob-amber"></div>
+      <div class="blob blob-teal"></div>
+      <div class="blob blob-violet"></div>
     </div>
 
-    <h1>Verse</h1>
-    <p class="tagline">Verse — lyrics in your notch.</p>
-    <p class="desc">
-      A macOS menu bar app that shows time-synced lyrics for whatever's
-      playing, anchored right to your MacBook's notch. Invisible when idle,
-      tiny when playing, beautiful when you want it.
-    </p>
+    <div class="echoes" aria-hidden="true">
+      <span class="echo echo-1">the streetlights hum our tune</span>
+      <span class="echo echo-2">gold in the dark of the room</span>
+      <span class="echo echo-3">the rhythm of the rain keeps time</span>
+      <span class="echo echo-4">hold the note till morning comes</span>
+      <span class="echo echo-5">we sang the city back to sleep</span>
+    </div>
 
-    <div class="cta">
-      <a class="btn-download" href="https://github.com/OWNER/verse/releases/latest/download/Verse.zip">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 1.5V10.5M8 10.5L4.5 7M8 10.5L11.5 7" stroke="#201404" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2.5 12.5V13.5C2.5 14.0523 2.94772 14.5 3.5 14.5H12.5C13.0523 14.5 13.5 14.0523 13.5 13.5V12.5" stroke="#201404" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Download for Mac
-      </a>
-      <div class="cta-meta">
-        macOS 14+ · Apple Silicon · free<br>
-        <a href="https://github.com/OWNER/verse/releases/latest">Release notes</a>
-        <div class="gatekeeper-note">
-          Ad-hoc signed — on first launch, right-click the app and choose
-          "Open".
+    <div class="wrap">
+      <section class="hero">
+        <div class="notch-stage">
+          <div class="notch">
+            <span class="notch-dot"></span>
+            <span class="notch-lyric" id="notch-lyric"
+              >and the city hums along in gold</span
+            >
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
 
-  <section class="strip">
-    <div class="strip-item">
-      <strong>Invisible when idle</strong>
-      Nothing playing, nothing shown. Your notch stays exactly as Apple made it.
-    </div>
-    <div class="strip-item">
-      <strong>Tiny when playing</strong>
-      A sliver of album art and the current line, sized to never collide with your menu bar.
-    </div>
-    <div class="strip-item">
-      <strong>Beautiful when you want it</strong>
-      Hover to expand into a full karaoke panel tinted by the album art.
-    </div>
-  </section>
+        <h1>Verse</h1>
+        <p class="tagline">Verse — lyrics in your notch.</p>
+        <p class="desc">
+          A macOS menu bar app that shows time-synced lyrics for whatever's
+          playing, anchored right to your MacBook's notch. Invisible when idle,
+          tiny when playing, beautiful when you want it.
+        </p>
 
-  <section class="features">
-    <h2>Features</h2>
-    <div class="feature-grid">
-      <div class="feature">
-        <h3>Time-synced lyrics</h3>
-        <p>Pulled from LRCLIB's free, open catalog and matched to the exact track, album, and duration you're hearing.</p>
-      </div>
-      <div class="feature">
-        <h3>Hover for vibe mode</h3>
-        <p>A karaoke panel grows out of the notch, tinted with the dominant color from the album art.</p>
-      </div>
-      <div class="feature">
-        <h3>Click any line to seek</h3>
-        <p>Jump playback straight to a lyric — instant, no scrubbing required.</p>
-      </div>
-      <div class="feature">
-        <h3>Four animation themes</h3>
-        <p>From expressive type-on and word spotlight to a minimal underline tracer — pick your energy.</p>
-      </div>
-      <div class="feature">
-        <h3>Spotify &amp; Apple Music</h3>
-        <p>Works with whichever one you already use, no extra setup.</p>
-      </div>
-      <div class="feature">
-        <h3>Cached offline</h3>
-        <p>Lyrics are saved locally after the first fetch, so repeat plays work without a connection.</p>
-      </div>
+        <div class="cta">
+          <a
+            class="btn-download"
+            href="https://github.com/cpt-nem0/verse/releases/latest/download/Verse.zip"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M8 1.5V10.5M8 10.5L4.5 7M8 10.5L11.5 7"
+                stroke="#201404"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M2.5 12.5V13.5C2.5 14.0523 2.94772 14.5 3.5 14.5H12.5C13.0523 14.5 13.5 14.0523 13.5 13.5V12.5"
+                stroke="#201404"
+                stroke-width="1.6"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+            Download for Mac
+          </a>
+          <div class="cta-meta">
+            macOS 14+ · Apple Silicon · free<br />
+            <a href="https://github.com/cpt-nem0/verse/releases/latest"
+              >Release notes</a
+            >
+            <div class="gatekeeper-note">
+              Ad-hoc signed — on first launch, right-click the app and choose
+              "Open".
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="strip reveal">
+        <div class="strip-item">
+          <strong>Invisible when idle</strong>
+          Nothing playing, nothing shown. Your notch stays exactly as Apple made
+          it.
+        </div>
+        <div class="strip-item">
+          <strong>Tiny when playing</strong>
+          The current line wraps around the notch in slim black wings, sized
+          to never collide with your menu bar.
+        </div>
+        <div class="strip-item">
+          <strong>Beautiful when you want it</strong>
+          Hover to expand into a full karaoke panel tinted by the album art.
+        </div>
+      </section>
+
+      <section class="features">
+        <h2 class="reveal">Features</h2>
+        <div class="feature-grid">
+          <div class="feature reveal">
+            <h3>Time-synced lyrics</h3>
+            <p>
+              Pulled from LRCLIB's free, open catalog and matched to the exact
+              track, album, and duration you're hearing.
+            </p>
+          </div>
+          <div class="feature reveal">
+            <h3>Hover for vibe mode</h3>
+            <p>
+              A karaoke panel grows out of the notch, tinted with the dominant
+              color from the album art.
+            </p>
+          </div>
+          <div class="feature reveal">
+            <h3>Click any line to seek</h3>
+            <p>
+              Jump playback straight to a lyric — instant, no scrubbing
+              required.
+            </p>
+          </div>
+          <div class="feature reveal">
+            <h3>Four animation themes</h3>
+            <p>
+              From expressive type-on and word spotlight to a minimal underline
+              tracer — pick your energy.
+            </p>
+          </div>
+          <div class="feature reveal">
+            <h3>Spotify &amp; Apple Music</h3>
+            <p>Works with whichever one you already use, no extra setup.</p>
+          </div>
+          <div class="feature reveal">
+            <h3>Cached offline</h3>
+            <p>
+              Lyrics are saved locally after the first fetch, so repeat plays
+              work without a connection.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <div class="footer-lyric" aria-hidden="true">
+          &ldquo;every word, right where you're looking&rdquo;
+        </div>
+        <div>Free &amp; open source · MIT</div>
+        <div class="links">
+          <a href="https://github.com/cpt-nem0/verse">GitHub</a>
+          <a href="https://lrclib.net">Lyrics by LRCLIB</a>
+        </div>
+      </footer>
     </div>
-  </section>
 
-  <footer>
-    <div>Free &amp; open source · MIT</div>
-    <div class="links">
-      <a href="https://github.com/OWNER/verse">GitHub</a>
-      <a href="https://lrclib.net">Lyrics by LRCLIB</a>
-    </div>
-  </footer>
+    <script>
+      (function () {
+        var reduced = window.matchMedia(
+          "(prefers-reduced-motion: reduce)",
+        ).matches;
 
-</div>
+        /* --- karaoke cycle in the notch: swap the lyric at each wipe loop --- */
+        var lines = [
+          "and the city hums along in gold",
+          "we were louder than the dark",
+          "every window sings your name",
+          "hold the note till morning comes",
+        ];
+        var lyric = document.getElementById("notch-lyric");
+        if (lyric && !reduced) {
+          var i = 0;
+          lyric.addEventListener("animationiteration", function () {
+            i = (i + 1) % lines.length;
+            lyric.textContent = lines[i];
+          });
+        }
 
-</body>
+        /* --- scroll reveal --- */
+        if (!reduced && "IntersectionObserver" in window) {
+          document.documentElement.classList.add("js");
+          var io = new IntersectionObserver(
+            function (entries) {
+              entries.forEach(function (e) {
+                if (e.isIntersecting) {
+                  e.target.classList.add("in");
+                  io.unobserve(e.target);
+                }
+              });
+            },
+            { rootMargin: "0px 0px -8% 0px", threshold: 0.1 },
+          );
+          document.querySelectorAll(".reveal").forEach(function (el) {
+            io.observe(el);
+          });
+        }
+      })();
+    </script>
+  </body>
 </html>
