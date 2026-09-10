@@ -3,78 +3,95 @@
 </p>
 
 <h1 align="center">Verse</h1>
-<p align="center"><em>Verse — lyrics in a pill.</em></p>
+<p align="center"><em>Lyrics in a pill.</em></p>
 
 <p align="center">
+  <a href="https://verse.3am.quest"><img src="https://img.shields.io/badge/website-verse.3am.quest-e9c989" alt="Website"></a>
+  <a href="https://github.com/cpt-nem0/verse/releases/latest"><img src="https://img.shields.io/github/v/release/cpt-nem0/verse?color=8fd3c8&label=release" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/macOS-14%2B-black?logo=apple&logoColor=white" alt="macOS 14+">
   <img src="https://img.shields.io/badge/Swift-5-orange?logo=swift&logoColor=white" alt="Swift 5">
-  <img src="https://img.shields.io/badge/license-MIT-e8b168" alt="MIT license">
+  <img src="https://img.shields.io/badge/license-MIT-e8a0b4" alt="MIT license">
+</p>
+
+<p align="center">
+  <a href="https://verse.3am.quest">
+    <img src="launch/ph-slide-1.png" alt="Verse — a floating glass pill singing the current lyric line" width="820">
+  </a>
 </p>
 
 Verse shows time-synced lyrics for whatever's playing, in a slim, draggable
 glass pill that floats above every app — always on top, never in the way.
 Click it and it unfurls into a translucent karaoke card. Calm when idle, tiny
-when playing, beautiful when you want it. Works on every Mac (no notch
-required).
+when playing, beautiful when you want it. Works on every Mac.
 
-**Website:** [cpt-nem0.github.io/verse](https://cpt-nem0.github.io/verse/)
+**Try it before installing:** the pill on [verse.3am.quest](https://verse.3am.quest)
+is a live recreation — drag it around the page, click it, scrub it.
+
+<!-- TODO: drag a 20-30s screen recording here via the GitHub web editor —
+     a real capture beats every image below. -->
 
 ## Install
 
-### Homebrew
+**Homebrew** — one line, installs and launches with no Gatekeeper prompt:
 
 ```sh
 brew install --cask cpt-nem0/tap/verse
 ```
 
-Verse is ad-hoc signed, not notarized by Apple, so Gatekeeper may still block
-the first launch. If so, either re-run with `--no-quarantine`:
-
-```sh
-brew install --cask --no-quarantine cpt-nem0/tap/verse
-```
-
-or clear the flag afterwards (see Manual install below).
-
-### One-line install
+**Or the install script** — same zero-prompt experience:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/cpt-nem0/verse/main/install.sh | bash
 ```
 
-Downloads the latest release, installs it to `/Applications`, clears the
-quarantine flag, and launches it.
-
-### Manual
-
-Download `Verse.zip` from [Releases](https://github.com/cpt-nem0/verse/releases/latest),
-unzip it into `/Applications`, then run:
+**Or manually**: download `Verse.zip` from
+[Releases](https://github.com/cpt-nem0/verse/releases/latest), unzip into
+`/Applications`, and clear the quarantine flag Gatekeeper stamps on browser
+downloads (Verse is ad-hoc signed, not notarized):
 
 ```sh
 xattr -cr /Applications/Verse.app
 ```
 
-This is necessary because Verse is ad-hoc signed rather than notarized by
-Apple, so macOS Gatekeeper quarantines it on download and refuses to open it
-("Verse is damaged and can't be opened") until the flag is cleared.
+(Or open it once via System Settings → Privacy & Security → **Open Anyway**.)
 
-## Features
+## The pill, the card
 
-- **A ball when idle, a pill when singing.** No music → a 30pt translucent
-  ball parked wherever you left it. Music playing → a capsule that hugs the
-  current lyric line, spring-animated as it changes.
+<p align="center">
+  <img src="launch/ph-slide-4.png" alt="Verse's three states: idle ball, singing pill, karaoke card" width="820">
+</p>
+
+- **A ball when idle, a pill when singing.** No music → a tiny translucent
+  ball parked wherever you left it, at near-zero CPU. Music playing → a
+  capsule that hugs the current lyric line, spring-animated as it changes.
 - **Click to unfurl.** One click opens a glass karaoke card: three lyric
   lines, click any line to seek, plus a scrubber and transport controls.
-- **Four animation themes**, expressive → minimal: Type-on, Word spotlight,
-  Light wipe (default), and Underline tracer — one setting drives both the
-  pill and the popup.
+
+<p align="center">
+  <img src="launch/ph-slide-2.png" alt="The karaoke card: three lyric lines, scrubber, transport controls" width="820">
+</p>
+
+- **Lives on any display.** Right-click → Screen sends the pill to another
+  monitor; it remembers which display it lives on, falls back gracefully when
+  you unplug, and comes back when you re-plug.
+- **Edge-anchored growth.** The pill remembers which screen edge you parked
+  it on and grows away from that edge as lines change width.
 - **Techie glass.** Translucent black material everywhere; the album's
-  dominant color tints only the lyric text and popup content, never the
-  material itself.
-- **Edge-anchored growth.** The pill remembers which screen edge you parked it
-  on and grows away from that edge as lines change width.
-- **Zero setup.** Detects whatever's playing automatically — no linking
-  accounts, no configuration.
+  dominant color tints only the lyric text, never the material. Echoes and
+  ad-libs — the parenthesis parts — render soft, small, and italic.
+- **Zero setup.** Detects whatever's playing automatically — no accounts, no
+  configuration.
+
+## Four themes
+
+<p align="center">
+  <img src="launch/ph-slide-3.png" alt="Four line-animation themes: type-on, word spotlight, light wipe, underline tracer" width="820">
+</p>
+
+One setting drives the animation in both the pill and the card, expressive →
+minimal: **Type-on**, **Word spotlight**, **Light wipe** (default), and
+**Underline tracer**. Springs everywhere, nothing over 450ms, and everything
+respects Reduce Motion.
 
 ## Supported sources
 
@@ -108,16 +125,11 @@ in release mode, and assembles + ad-hoc signs `build/Verse.app`. Other
 commands: `./build.sh` (build only), `./build.sh install` (copy to
 `/Applications`), `./build.sh clean`.
 
-## Running checks
-
-There's no XCTest target on this project; pure logic is covered by
-self-contained checks:
+Checks (no XCTest target; pure logic is covered by self-contained checks):
 
 ```sh
-swift run Verse --checks
+swift run Verse --checks   # expect ALL CHECKS PASSED
 ```
-
-Expect `ALL CHECKS PASSED`.
 
 ## Credits
 
