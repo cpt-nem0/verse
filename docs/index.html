@@ -148,113 +148,153 @@
       /* ============ hero ============ */
 
       .hero {
-        padding: 56px 0 0;
+        padding: 330px 0 0;
         text-align: center;
       }
 
-      /* ---- the desktop stage ---- */
+      /* ---- the page IS the desktop ---- */
 
-      .stage {
+      body {
         position: relative;
-        max-width: 880px;
-        margin: 0 auto;
-        border-radius: 18px;
-        overflow: hidden;
-        border: 1px solid var(--line);
-        background:
-          radial-gradient(140% 90% at 70% -10%, #182036 0%, transparent 55%),
-          radial-gradient(120% 100% at 15% 110%, #1a1426 0%, transparent 50%),
-          linear-gradient(180deg, #0c0f16, #090b10);
-        box-shadow:
-          0 40px 90px -40px rgba(0, 0, 0, 0.9),
-          inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        height: 430px;
       }
 
-      /* faint stars in the wallpaper */
-      .stage::before {
-        content: "";
-        position: absolute;
-        inset: 0;
-        background-image:
-          radial-gradient(1px 1px at 18% 28%, rgba(255, 255, 255, 0.35), transparent 100%),
-          radial-gradient(1px 1px at 72% 18%, rgba(255, 255, 255, 0.28), transparent 100%),
-          radial-gradient(1.5px 1.5px at 86% 46%, rgba(255, 255, 255, 0.22), transparent 100%),
-          radial-gradient(1px 1px at 34% 64%, rgba(255, 255, 255, 0.18), transparent 100%),
-          radial-gradient(1px 1px at 58% 79%, rgba(255, 255, 255, 0.2), transparent 100%),
-          radial-gradient(1.5px 1.5px at 8% 82%, rgba(255, 255, 255, 0.16), transparent 100%),
-          radial-gradient(1px 1px at 93% 74%, rgba(255, 255, 255, 0.25), transparent 100%);
-        pointer-events: none;
+      .hero,
+      main,
+      footer {
+        position: relative;
+        z-index: 1;
       }
 
       .menubar {
-        position: relative;
-        z-index: 3;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 2;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        height: 30px;
-        padding: 0 14px;
+        height: 32px;
+        padding: 0 18px;
         font-size: 12px;
-        color: rgba(233, 236, 242, 0.5);
-        background: rgba(10, 12, 17, 0.4);
-        -webkit-backdrop-filter: blur(10px);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        color: rgba(233, 236, 242, 0.45);
         user-select: none;
-      }
-
-      .menubar .mb-left,
-      .menubar .mb-right {
-        display: flex;
-        align-items: center;
-        gap: 14px;
       }
 
       .menubar .mb-app {
         font-weight: 600;
-        color: rgba(233, 236, 242, 0.65);
+        color: rgba(233, 236, 242, 0.6);
       }
 
-      /* ---- pill + card live area ---- */
-
-      .live {
-        position: absolute;
-        inset: 30px 0 0 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      /* pooled color behind the glass so the blur reads */
-      .live-glow {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 480px;
-        height: 200px;
-        transform: translate(-50%, -50%);
-        background:
-          radial-gradient(ellipse 42% 68% at 34% 48%, rgba(232, 160, 180, 0.32), transparent 70%),
-          radial-gradient(ellipse 38% 62% at 66% 54%, rgba(233, 201, 137, 0.26), transparent 70%),
-          radial-gradient(ellipse 32% 55% at 50% 62%, rgba(143, 211, 200, 0.22), transparent 70%);
-        filter: blur(38px);
-        animation: glow-sway 16s ease-in-out infinite alternate;
+      /* whole-page night sky: stars + a slow aurora drift */
+      .ambient {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
         pointer-events: none;
       }
 
-      @keyframes glow-sway {
+      .ambient::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image:
+          radial-gradient(1px 1px at 18% 28%, rgba(255, 255, 255, 0.3), transparent 100%),
+          radial-gradient(1px 1px at 72% 18%, rgba(255, 255, 255, 0.24), transparent 100%),
+          radial-gradient(1.5px 1.5px at 86% 46%, rgba(255, 255, 255, 0.18), transparent 100%),
+          radial-gradient(1px 1px at 34% 64%, rgba(255, 255, 255, 0.15), transparent 100%),
+          radial-gradient(1px 1px at 58% 79%, rgba(255, 255, 255, 0.17), transparent 100%),
+          radial-gradient(1.5px 1.5px at 8% 82%, rgba(255, 255, 255, 0.13), transparent 100%),
+          radial-gradient(1px 1px at 93% 74%, rgba(255, 255, 255, 0.2), transparent 100%);
+      }
+
+      .aurora {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(110px);
+        will-change: transform;
+      }
+
+      .aurora-a {
+        width: 700px;
+        height: 700px;
+        top: -260px;
+        left: 55%;
+        background: radial-gradient(circle, rgba(24, 32, 54, 0.9), transparent 65%);
+        animation: aurora-a 52s ease-in-out infinite alternate;
+      }
+
+      .aurora-b {
+        width: 640px;
+        height: 640px;
+        bottom: -240px;
+        left: -200px;
+        background: radial-gradient(circle, rgba(26, 20, 38, 0.8), transparent 65%);
+        animation: aurora-b 64s ease-in-out infinite alternate;
+      }
+
+      @keyframes aurora-a {
         from {
-          transform: translate(-52%, -50%) scale(1);
+          transform: translate(-70px, 0);
         }
         to {
-          transform: translate(-48%, -48%) scale(1.07);
+          transform: translate(90px, 60px);
         }
       }
 
+      @keyframes aurora-b {
+        from {
+          transform: translate(0, 40px);
+        }
+        to {
+          transform: translate(120px, -50px);
+        }
+      }
+
+      /* ghost lyrics scattered down the page — they light up
+         when the pill is carried near them */
+      .echoes {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .echo {
+        position: absolute;
+        font-family: var(--serif);
+        font-style: italic;
+        white-space: nowrap;
+        color: var(--moon);
+        opacity: 0.045;
+        transition: opacity 0.25s ease;
+      }
+
+      /* the pooled light that travels with the pill */
+      .glow {
+        position: fixed;
+        left: 0;
+        top: 0;
+        width: 460px;
+        height: 190px;
+        margin: -95px 0 0 -230px;
+        z-index: 40;
+        background:
+          radial-gradient(ellipse 42% 68% at 34% 48%, rgba(232, 160, 180, 0.28), transparent 70%),
+          radial-gradient(ellipse 38% 62% at 66% 54%, rgba(233, 201, 137, 0.22), transparent 70%),
+          radial-gradient(ellipse 32% 55% at 50% 62%, rgba(143, 211, 200, 0.18), transparent 70%);
+        filter: blur(38px);
+        pointer-events: none;
+        will-change: transform;
+      }
+
       .pill {
-        position: relative;
-        z-index: 2;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 60;
         height: 42px;
         display: inline-flex;
         align-items: center;
@@ -270,12 +310,18 @@
           inset 0 1px 0 rgba(255, 255, 255, 0.07);
         white-space: nowrap;
         overflow: hidden;
+        cursor: grab;
+        touch-action: none;
+        will-change: transform;
         transition:
           width 0.55s cubic-bezier(0.3, 1.25, 0.45, 1),
           height 0.55s cubic-bezier(0.3, 1.25, 0.45, 1),
           padding 0.55s cubic-bezier(0.3, 1.25, 0.45, 1),
-          opacity 0.3s ease,
-          transform 0.45s cubic-bezier(0.3, 1.25, 0.45, 1);
+          opacity 0.3s ease;
+      }
+
+      .pill.dragging {
+        cursor: grabbing;
       }
 
       .pill-lyric {
@@ -306,13 +352,13 @@
 
       /* stage states */
 
-      .stage.is-ball .pill {
+      .pill.is-ball {
         width: 34px !important;
         height: 34px;
         padding: 0;
       }
 
-      .stage.is-ball .pill-lyric {
+      .pill.is-ball .pill-lyric {
         opacity: 0;
       }
 
@@ -325,7 +371,7 @@
         transition: opacity 0.3s ease 0.2s;
       }
 
-      .stage.is-ball .ball-note {
+      .pill.is-ball .ball-note {
         opacity: 1;
         animation: breathe 3.4s ease-in-out infinite;
       }
@@ -340,17 +386,18 @@
         }
       }
 
-      .stage.is-card .pill {
+      body.card-open .pill {
         opacity: 0;
-        transform: scale(0.6);
         pointer-events: none;
       }
 
       /* ---- the karaoke card ---- */
 
       .card {
-        position: absolute;
-        z-index: 4;
+        position: fixed;
+        left: 0;
+        top: 0;
+        z-index: 55;
         width: 400px;
         border-radius: 22px;
         background: var(--glass);
@@ -369,9 +416,10 @@
           transform 0.5s cubic-bezier(0.3, 1.18, 0.4, 1);
       }
 
-      .stage.is-card .card {
+      body.card-open .card {
         opacity: 1;
         transform: scale(1);
+        pointer-events: auto;
       }
 
       .card-head {
@@ -498,15 +546,10 @@
 
       /* ---- interactivity ---- */
 
-      .pill,
       .card-line.side,
       .scrub-track,
       .t-btn.play {
         cursor: pointer;
-      }
-
-      .stage.is-card .pill {
-        cursor: default;
       }
 
       button.t-btn {
@@ -993,13 +1036,14 @@
           scroll-behavior: auto;
         }
         .lyric-light,
-        .live-glow,
+        .glow,
+        .aurora,
         .t-typeon span,
         .t-spot span,
         .t-wipe .wipe-text,
         .t-trace::after,
         .scrub-fill,
-        .stage.is-ball .ball-note {
+        .pill.is-ball .ball-note {
           animation: none !important;
           transition: none !important;
         }
@@ -1031,15 +1075,14 @@
 
       @media (max-width: 720px) {
         .hero {
-          padding-top: 32px;
-        }
-        .stage {
-          height: 380px;
-          border-radius: 14px;
+          padding-top: 250px;
         }
         .card {
           width: 330px;
           padding: 14px 16px 12px;
+        }
+        .echo {
+          display: none;
         }
         .card-line.now {
           font-size: 18px;
@@ -1071,24 +1114,33 @@
     </style>
   </head>
   <body>
-    <header class="hero">
-      <div class="wrap-wide">
-        <div class="stage is-ball" id="stage" aria-label="Live demo of the Verse pill">
-          <div class="menubar" aria-hidden="true">
-            <div class="mb-left">
-              <span class="mb-app">Verse</span>
-            </div>
-            <div class="mb-right">
-              <span>3:04 AM</span>
-            </div>
-          </div>
-          <div class="live">
-            <div class="live-glow" aria-hidden="true"></div>
-            <div class="pill" id="pill">
-              <span class="ball-note" aria-hidden="true">&#9834;</span>
-              <span class="pill-lyric singing" id="pill-lyric"></span>
-            </div>
-            <div class="card" id="card" aria-hidden="true">
+    <div class="ambient" aria-hidden="true">
+      <div class="aurora aurora-a"></div>
+      <div class="aurora aurora-b"></div>
+    </div>
+
+    <div class="echoes" aria-hidden="true">
+      <span class="echo" style="top: 16%; left: 3%; font-size: 26px">3am knows all the words</span>
+      <span class="echo" style="top: 27%; right: 4%; font-size: 20px">sing it like nobody's up</span>
+      <span class="echo" style="top: 42%; left: 5%; font-size: 22px">the fridge light is a spotlight</span>
+      <span class="echo" style="top: 56%; right: 3%; font-size: 25px">hum if you forget the words</span>
+      <span class="echo" style="top: 71%; left: 4%; font-size: 19px">the neighbours are asleep — softer</span>
+      <span class="echo" style="top: 86%; right: 5%; font-size: 23px">one more song, then bed</span>
+    </div>
+
+    <div class="menubar" aria-hidden="true">
+      <span class="mb-app">Verse</span>
+      <span>3:04 AM</span>
+    </div>
+
+    <div class="glow" id="glow" aria-hidden="true"></div>
+
+    <div class="pill" id="pill" aria-label="The Verse pill — drag it anywhere, click to open">
+      <span class="ball-note" aria-hidden="true">&#9834;</span>
+      <span class="pill-lyric singing" id="pill-lyric"></span>
+    </div>
+
+    <div class="card" id="card">
               <div class="card-head">
                 <div class="card-art"></div>
                 <div>
@@ -1118,11 +1170,11 @@
                 </div>
                 <span class="t-side" style="text-align: right" aria-hidden="true">&#9738;</span>
               </div>
-            </div>
-          </div>
-        </div>
+    </div>
 
-        <p class="stage-hint">Go on — click the pill.</p>
+    <header class="hero">
+      <div class="wrap-wide">
+        <p class="stage-hint">The pill up there is real — drag it anywhere, then click it.</p>
 
         <h1 class="lyric-light">Lyrics in a pill.</h1>
         <p class="lede">
@@ -1313,9 +1365,9 @@
 
         /* ---------- hero choreography ---------- */
 
-        var stage = document.getElementById("stage");
         var pill = document.getElementById("pill");
         var card = document.getElementById("card");
+        var glow = document.getElementById("glow");
         var lyric = document.getElementById("pill-lyric");
         var linePrev = document.getElementById("line-prev");
         var lineNow = document.getElementById("line-now");
@@ -1382,11 +1434,15 @@
           return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
         }
 
+        var pillW = 34;
+
         function showPillLine(i) {
           if (i < 0) return;
           var text = song[i].text;
           lyric.textContent = text;
-          pill.style.width = widthFor(text) + "px";
+          pillW = widthFor(text);
+          pill.style.width = pillW + "px";
+          if (typeof clampPill === "function") clampPill();
           lyric.style.animation = "none";
           void lyric.offsetWidth;
           if (!reduced) {
@@ -1424,17 +1480,135 @@
           render();
         }, 100);
 
+        /* ---- the free pill: position, drag, glow, proximity ---- */
+
+        var px = window.innerWidth / 2;
+        var py = Math.min(190, window.innerHeight * 0.3);
+
+        function clampPill() {
+          var half = Math.min(pillW / 2 + 12, window.innerWidth / 2);
+          px = Math.min(Math.max(px, half), window.innerWidth - half);
+          py = Math.min(Math.max(py, 44), window.innerHeight - 33);
+          placePill();
+        }
+
+        function placePill() {
+          pill.style.transform =
+            "translate(" + px + "px," + py + "px) translate(-50%,-50%)";
+          glow.style.transform = "translate(" + px + "px," + py + "px)";
+          if (document.body.classList.contains("card-open")) placeCard();
+        }
+
+        function placeCard() {
+          var w = card.offsetWidth || 400;
+          var h = card.offsetHeight || 250;
+          var below = py < window.innerHeight / 2;
+          var left = Math.min(
+            Math.max(px - w / 2, 12),
+            window.innerWidth - w - 12
+          );
+          var top = below
+            ? Math.min(py + 30, window.innerHeight - h - 12)
+            : Math.max(py - 30 - h, 12);
+          card.style.left = left + "px";
+          card.style.top = top + "px";
+          card.style.transformOrigin =
+            px - left + "px " + (below ? "0" : h + "px");
+        }
+
+        /* ghost lyrics + headings light up as the pill passes */
+        var litTargets = [].slice.call(
+          document.querySelectorAll(".echo, .verse-heading")
+        );
+        var proxQueued = false;
+
+        function proximity() {
+          proxQueued = false;
+          for (var k = 0; k < litTargets.length; k++) {
+            var el = litTargets[k];
+            var r = el.getBoundingClientRect();
+            if (r.bottom < -80 || r.top > window.innerHeight + 80) continue;
+            var cx = r.left + r.width / 2;
+            var cy = r.top + r.height / 2;
+            var d = Math.hypot(px - cx, py - cy);
+            var lit = Math.max(0, 1 - d / 300);
+            if (el.classList.contains("echo")) {
+              el.style.opacity = 0.045 + lit * 0.5;
+              el.style.textShadow =
+                lit > 0.02
+                  ? "0 0 " + 24 * lit + "px rgba(233,201,137," + 0.5 * lit + ")"
+                  : "";
+            } else {
+              el.style.textShadow =
+                lit > 0.02
+                  ? "0 0 " + 34 * lit + "px rgba(233,201,137," + 0.4 * lit + ")"
+                  : "";
+            }
+          }
+        }
+
+        function queueProximity() {
+          if (!proxQueued) {
+            proxQueued = true;
+            requestAnimationFrame(proximity);
+          }
+        }
+
+        window.addEventListener("scroll", queueProximity, { passive: true });
+        window.addEventListener("resize", function () {
+          clampPill();
+          queueProximity();
+        });
+
+        /* drag — 3pt threshold, just like the app */
+        var dragging = false;
+        var wasDrag = false;
+        var startX = 0,
+          startY = 0,
+          startPX = 0,
+          startPY = 0;
+
+        pill.addEventListener("pointerdown", function (e) {
+          dragging = true;
+          wasDrag = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          startPX = px;
+          startPY = py;
+          pill.setPointerCapture(e.pointerId);
+          pill.classList.add("dragging");
+        });
+
+        pill.addEventListener("pointermove", function (e) {
+          if (!dragging) return;
+          var dx = e.clientX - startX;
+          var dy = e.clientY - startY;
+          if (!wasDrag && Math.hypot(dx, dy) < 3) return;
+          wasDrag = true;
+          userDriven = true;
+          px = startPX + dx;
+          py = startPY + dy;
+          clampPill();
+          queueProximity();
+        });
+
+        pill.addEventListener("pointerup", function () {
+          dragging = false;
+          pill.classList.remove("dragging");
+        });
+
         /* ---- states ---- */
 
         function toCard() {
-          stage.classList.remove("is-ball");
-          stage.classList.add("is-card");
+          pill.classList.remove("is-ball");
+          document.body.classList.add("card-open");
           showCardLines(lineAt(time));
+          placeCard();
         }
 
         function toPill() {
-          stage.classList.remove("is-ball");
-          stage.classList.remove("is-card");
+          pill.classList.remove("is-ball");
+          document.body.classList.remove("card-open");
           showPillLine(Math.max(0, lineAt(time)));
         }
 
@@ -1452,24 +1626,25 @@
         /* ---- interactions: the demo is the product ---- */
 
         pill.addEventListener("click", function () {
+          if (wasDrag) return;
           userDriven = true;
-          if (!stage.classList.contains("is-card")) toCard();
+          if (!document.body.classList.contains("card-open")) toCard();
         });
 
-        stage.addEventListener("click", function (e) {
+        document.addEventListener("click", function (e) {
           /* click outside the card exhales back to the pill */
-          if (pill.contains(e.target)) return;
-          if (
-            stage.classList.contains("is-card") &&
-            !card.contains(e.target)
-          ) {
+          if (pill.contains(e.target) || card.contains(e.target)) return;
+          if (document.body.classList.contains("card-open")) {
             userDriven = true;
             toPill();
           }
         });
 
         document.addEventListener("keydown", function (e) {
-          if (e.key === "Escape" && stage.classList.contains("is-card")) {
+          if (
+            e.key === "Escape" &&
+            document.body.classList.contains("card-open")
+          ) {
             userDriven = true;
             toPill();
           }
@@ -1506,21 +1681,23 @@
         }
 
         async function intro() {
+          placePill();
+          queueProximity();
           if (reduced) {
-            stage.classList.remove("is-ball");
             time = song[2].t + 0.01;
             render();
             lyric.classList.remove("singing");
             lyric.style.animation = "none";
             return;
           }
+          pill.classList.add("is-ball");
           pill.style.width = "34px";
           render();
           await sleep(1400);
           if (userDriven) return;
           toPill();
           for (;;) {
-            /* sing until the third line, then unfurl the card */
+            /* sing until the third line, then unfurl the card once */
             while (!userDriven && lineAt(time) < 2) await sleep(200);
             if (userDriven) return;
             toCard();
