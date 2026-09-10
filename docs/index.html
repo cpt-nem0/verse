@@ -1485,10 +1485,30 @@
 
         /* ---- the free pill: position, drag, glow, proximity ---- */
 
+        /* the pill starts "at home" in the hero: docked, it scrolls away with
+           the page like any content. Dragging it picks it up — from then on
+           it floats fixed above everything, like the real thing. */
+        var homeY = Math.min(190, window.innerHeight * 0.3);
+        var docked = true;
         var px = window.innerWidth / 2;
-        var py = Math.min(190, window.innerHeight * 0.3);
+        var py = homeY - window.scrollY;
+
+        function undock() {
+          docked = false;
+        }
+
+        function followScroll() {
+          if (!docked) return;
+          px = window.innerWidth / 2;
+          py = homeY - window.scrollY;
+          placePill();
+        }
 
         function clampPill() {
+          if (docked) {
+            followScroll();
+            return;
+          }
           var half = Math.min(pillW / 2 + 12, window.innerWidth / 2);
           px = Math.min(Math.max(px, half), window.innerWidth - half);
           py = Math.min(Math.max(py, 44), window.innerHeight - 33);
@@ -1513,9 +1533,16 @@
             Math.max(px - w / 2, 12),
             window.innerWidth - w - 12
           );
-          var top = below
-            ? Math.min(py + 30, window.innerHeight - h - 12)
-            : Math.max(py - 30 - h, 12);
+          var top;
+          if (docked) {
+            /* at home the card rides the page — no viewport clamping */
+            below = true;
+            top = py + 30;
+          } else {
+            top = below
+              ? Math.min(py + 30, window.innerHeight - h - 12)
+              : Math.max(py - 30 - h, 12);
+          }
           card.style.left = left + "px";
           card.style.top = top + "px";
           card.style.transformOrigin =
@@ -1560,7 +1587,14 @@
           }
         }
 
-        window.addEventListener("scroll", queueProximity, { passive: true });
+        window.addEventListener(
+          "scroll",
+          function () {
+            followScroll();
+            queueProximity();
+          },
+          { passive: true }
+        );
         window.addEventListener("resize", function () {
           clampPill();
           queueProximity();
@@ -1592,6 +1626,7 @@
           if (!wasDrag && Math.hypot(dx, dy) < 3) return;
           wasDrag = true;
           userDriven = true;
+          undock();
           px = startPX + dx;
           py = startPY + dy;
           clampPill();
@@ -1626,6 +1661,7 @@
           if (!wasDrag && Math.hypot(dx, dy) < 3) return;
           wasDrag = true;
           userDriven = true;
+          undock();
           px = startPX + dx;
           py = startPY + dy;
           clampPill();
