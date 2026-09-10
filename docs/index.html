@@ -496,6 +496,49 @@
         width: 20px;
       }
 
+      /* ---- interactivity ---- */
+
+      .pill,
+      .card-line.side,
+      .scrub-track,
+      .t-btn.play {
+        cursor: pointer;
+      }
+
+      .stage.is-card .pill {
+        cursor: default;
+      }
+
+      button.t-btn {
+        appearance: none;
+        background: none;
+        border: none;
+        padding: 8px 10px;
+        margin: -8px -10px;
+        font-size: 13px;
+        letter-spacing: 1px;
+      }
+
+      .card-line.side {
+        padding: 3px 0;
+      }
+
+      .pill.paused {
+        opacity: 0.6;
+      }
+
+      .pill.paused .pill-lyric.singing {
+        animation-play-state: paused !important;
+      }
+
+      .stage-hint {
+        margin: 16px 0 0;
+        font-size: 13px;
+        color: var(--faint);
+        font-style: italic;
+        font-family: var(--serif);
+      }
+
       /* ---- headline under the stage ---- */
 
       .hero h1 {
@@ -1049,8 +1092,8 @@
               <div class="card-head">
                 <div class="card-art"></div>
                 <div>
-                  <div class="card-title">Gold in the Dark</div>
-                  <div class="card-artist">Night Bus</div>
+                  <div class="card-title">Beautiful Dreamer</div>
+                  <div class="card-artist">Stephen Foster</div>
                 </div>
                 <div class="card-source">&#9834;</div>
               </div>
@@ -1060,22 +1103,26 @@
                 <div class="card-line side" id="line-next"></div>
               </div>
               <div class="card-scrub">
-                <span id="scrub-at">1:07</span>
-                <div class="scrub-track"><div class="scrub-fill" id="scrub-fill"></div></div>
-                <span>3:42</span>
+                <span id="scrub-at">0:00</span>
+                <div class="scrub-track" id="scrub-track">
+                  <div class="scrub-fill" id="scrub-fill"></div>
+                </div>
+                <span id="scrub-total">0:44</span>
               </div>
               <div class="card-transport">
                 <span class="t-side" aria-hidden="true">&#8943;</span>
-                <div class="transport-mid" aria-hidden="true">
-                  <span class="t-btn">&#9198;</span>
-                  <span class="t-btn play">&#9654;</span>
-                  <span class="t-btn">&#9197;</span>
+                <div class="transport-mid">
+                  <span class="t-btn" aria-hidden="true">&#9198;</span>
+                  <button class="t-btn play" id="play-btn" aria-label="Play or pause">&#10074;&#10074;</button>
+                  <span class="t-btn" aria-hidden="true">&#9197;</span>
                 </div>
                 <span class="t-side" style="text-align: right" aria-hidden="true">&#9738;</span>
               </div>
             </div>
           </div>
         </div>
+
+        <p class="stage-hint">Go on — click the pill.</p>
 
         <h1 class="lyric-light">Lyrics in a pill.</h1>
         <p class="lede">
@@ -1268,19 +1315,31 @@
 
         var stage = document.getElementById("stage");
         var pill = document.getElementById("pill");
+        var card = document.getElementById("card");
         var lyric = document.getElementById("pill-lyric");
         var linePrev = document.getElementById("line-prev");
         var lineNow = document.getElementById("line-now");
         var lineNext = document.getElementById("line-next");
         var scrubFill = document.getElementById("scrub-fill");
+        var scrubTrack = document.getElementById("scrub-track");
         var scrubAt = document.getElementById("scrub-at");
+        var scrubTotal = document.getElementById("scrub-total");
+        var playBtn = document.getElementById("play-btn");
 
-        var lines = [
-          "and the city hums along in gold",
-          "we were louder than the dark",
-          "every window sings your name",
-          "hold the note till morning comes",
+        /* "Beautiful Dreamer" (Stephen Foster, 1864 — public domain),
+           timed like the .lrc files Verse plays. */
+        var song = [
+          { t: 1.6, text: "Beautiful dreamer, wake unto me" },
+          { t: 6.8, text: "Starlight and dewdrops are waiting for thee" },
+          { t: 12.2, text: "Sounds of the rude world heard in the day" },
+          { t: 17.4, text: "Lulled by the moonlight have all passed away" },
+          { t: 23.0, text: "Beautiful dreamer, queen of my song" },
+          { t: 28.2, text: "List while I woo thee with soft melody" },
+          { t: 33.6, text: "Gone are the cares of life's busy throng" },
+          { t: 38.8, text: "Beautiful dreamer, awake unto me" },
         ];
+        var DURATION = 44;
+        scrubTotal.textContent = "0:44";
 
         /* measure a line's rendered width so the pill hugs it */
         var measurer = document.createElement("span");
@@ -1294,100 +1353,186 @@
           return Math.ceil(measurer.getBoundingClientRect().width) + 44;
         }
 
+        /* the pill's per-line wipe keyframes, generated once */
+        var style = document.createElement("style");
+        style.textContent =
+          "@keyframes pill-wipe{from{background-position:100% 0}to{background-position:-60% 0}}";
+        document.head.appendChild(style);
+
+        /* ---- playback clock ---- */
+
+        var time = 0;
+        var playing = true;
+        var shownLine = -1;
+        var userDriven = false;
+
+        function lineAt(t) {
+          var i = -1;
+          for (var k = 0; k < song.length; k++) if (song[k].t <= t) i = k;
+          return i;
+        }
+
+        function lineDur(i) {
+          var end = i + 1 < song.length ? song[i + 1].t : DURATION;
+          return (end - song[i].t) * 1000;
+        }
+
+        function fmt(t) {
+          t = Math.max(0, Math.floor(t));
+          return Math.floor(t / 60) + ":" + String(t % 60).padStart(2, "0");
+        }
+
+        function showPillLine(i) {
+          if (i < 0) return;
+          var text = song[i].text;
+          lyric.textContent = text;
+          pill.style.width = widthFor(text) + "px";
+          lyric.style.animation = "none";
+          void lyric.offsetWidth;
+          if (!reduced) {
+            lyric.style.animation = "pill-wipe " + lineDur(i) + "ms linear forwards";
+          }
+        }
+
+        function showCardLines(i) {
+          linePrev.textContent = i > 0 ? song[i - 1].text : "";
+          lineNow.textContent = i >= 0 ? song[i].text : song[0].text;
+          lineNext.textContent = i + 1 < song.length ? song[i + 1].text : "";
+        }
+
+        function render() {
+          var i = lineAt(time);
+          if (i !== shownLine) {
+            shownLine = i;
+            showPillLine(i);
+            showCardLines(i);
+          }
+          scrubFill.style.width = (time / DURATION) * 100 + "%";
+          scrubAt.textContent = fmt(time);
+        }
+
+        function seek(t) {
+          time = Math.min(Math.max(t, 0), DURATION - 0.1);
+          shownLine = -2; /* force re-render */
+          render();
+        }
+
+        setInterval(function () {
+          if (!playing || document.hidden || reduced) return;
+          time += 0.1;
+          if (time >= DURATION) time = 0;
+          render();
+        }, 100);
+
+        /* ---- states ---- */
+
+        function toCard() {
+          stage.classList.remove("is-ball");
+          stage.classList.add("is-card");
+          showCardLines(lineAt(time));
+        }
+
+        function toPill() {
+          stage.classList.remove("is-ball");
+          stage.classList.remove("is-card");
+          showPillLine(Math.max(0, lineAt(time)));
+        }
+
+        function setPlaying(p) {
+          playing = p;
+          pill.classList.toggle("paused", !p);
+          playBtn.innerHTML = p ? "&#10074;&#10074;" : "&#9654;";
+          if (!p) {
+            lyric.style.animationPlayState = "paused";
+          } else {
+            lyric.style.animationPlayState = "running";
+          }
+        }
+
+        /* ---- interactions: the demo is the product ---- */
+
+        pill.addEventListener("click", function () {
+          userDriven = true;
+          if (!stage.classList.contains("is-card")) toCard();
+        });
+
+        stage.addEventListener("click", function (e) {
+          /* click outside the card exhales back to the pill */
+          if (pill.contains(e.target)) return;
+          if (
+            stage.classList.contains("is-card") &&
+            !card.contains(e.target)
+          ) {
+            userDriven = true;
+            toPill();
+          }
+        });
+
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && stage.classList.contains("is-card")) {
+            userDriven = true;
+            toPill();
+          }
+        });
+
+        [linePrev, lineNext].forEach(function (el, which) {
+          el.addEventListener("click", function (e) {
+            e.stopPropagation();
+            userDriven = true;
+            var i = lineAt(time) + (which === 0 ? -1 : 1);
+            if (i >= 0 && i < song.length) seek(song[i].t + 0.01);
+          });
+        });
+
+        scrubTrack.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userDriven = true;
+          var r = scrubTrack.getBoundingClientRect();
+          seek(((e.clientX - r.left) / r.width) * DURATION);
+        });
+
+        playBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          userDriven = true;
+          setPlaying(!playing);
+        });
+
+        /* ---- opening choreography (hands off once the user drives) ---- */
+
         function sleep(ms) {
           return new Promise(function (r) {
             setTimeout(r, ms);
           });
         }
 
-        function waitVisible() {
-          return new Promise(function (r) {
-            if (!document.hidden) return r();
-            document.addEventListener(
-              "visibilitychange",
-              function h() {
-                if (!document.hidden) {
-                  document.removeEventListener("visibilitychange", h);
-                  r();
-                }
-              }
-            );
-          });
-        }
-
-        function setLine(i, dur) {
-          var text = lines[i];
-          lyric.textContent = text;
-          pill.style.width = widthFor(text) + "px";
-          /* restart the wipe */
-          lyric.style.animation = "none";
-          void lyric.offsetWidth;
-          lyric.style.animation = "pill-wipe " + dur + "ms linear forwards";
-        }
-
-        /* the pill's per-line wipe, generated once */
-        var style = document.createElement("style");
-        style.textContent =
-          "@keyframes pill-wipe{from{background-position:100% 0}to{background-position:-60% 0}}";
-        document.head.appendChild(style);
-
-        function setCardLines(i) {
-          linePrev.textContent = lines[(i + lines.length - 1) % lines.length];
-          lineNow.textContent = lines[i];
-          lineNext.textContent = lines[(i + 1) % lines.length];
-        }
-
-        var seconds = 67;
-        function tickScrub(i, total) {
-          var frac = 0.28 + 0.5 * (i / Math.max(1, total - 1));
-          scrubFill.style.width = frac * 100 + "%";
-          seconds += 3;
-          scrubAt.textContent =
-            Math.floor(seconds / 60) + ":" + String(seconds % 60).padStart(2, "0");
-        }
-
-        async function run() {
+        async function intro() {
           if (reduced) {
-            /* static composition: pill with a fully lit line */
             stage.classList.remove("is-ball");
-            lyric.textContent = lines[2];
+            time = song[2].t + 0.01;
+            render();
             lyric.classList.remove("singing");
-            pill.style.width = widthFor(lines[2]) + "px";
+            lyric.style.animation = "none";
             return;
           }
-          /* pre-size the pill so the first inflate springs to the right width */
           pill.style.width = "34px";
+          render();
+          await sleep(1400);
+          if (userDriven) return;
+          toPill();
           for (;;) {
-            await waitVisible();
-            stage.classList.add("is-ball");
-            stage.classList.remove("is-card");
-            await sleep(1400);
-
-            /* inflate into the pill and sing two lines */
-            stage.classList.remove("is-ball");
-            for (var i = 0; i < 2; i++) {
-              var dur = 1900 + lines[i].length * 24;
-              setLine(i, dur);
-              await sleep(dur + 200);
-            }
-
-            /* unfurl the card — the moment — and let it sing */
-            scrubFill.style.width = "28%";
-            stage.classList.add("is-card");
-            for (var j = 1; j < lines.length; j++) {
-              setCardLines(j);
-              tickScrub(j, lines.length);
-              await sleep(2400);
-            }
-
-            /* exhale back to the pill for one line, then rest */
-            stage.classList.remove("is-card");
-            setLine(3, 2600);
-            await sleep(3000);
+            /* sing until the third line, then unfurl the card */
+            while (!userDriven && lineAt(time) < 2) await sleep(200);
+            if (userDriven) return;
+            toCard();
+            while (!userDriven && lineAt(time) < 6) await sleep(200);
+            if (userDriven) return;
+            toPill();
+            while (!userDriven && time > 2) await sleep(300);
+            if (userDriven) return;
           }
         }
 
-        run();
+        intro();
 
         /* ---------- copy buttons ---------- */
 
