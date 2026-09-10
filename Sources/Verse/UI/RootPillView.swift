@@ -187,6 +187,18 @@ struct PillContextMenu: View {
             .pickerStyle(.inline)   // 4 options, checkmark on the current theme
         }
 
+        // Single-display Macs get no submenu at all — nothing to choose.
+        if NSScreen.screens.count > 1 {
+            Menu("Screen") {
+                Picker("Screen", selection: screenSelection) {
+                    ForEach(NSScreen.screens, id: \.self) { screen in
+                        Text(screen.localizedName).tag(screen.displayID)
+                    }
+                }
+                .pickerStyle(.inline)   // checkmark on the panel's current screen
+            }
+        }
+
         Menu("Lyric timing") {
             Button("−0.5s") { model.adjustSyncOffset(by: -0.5) }
             Button("−0.1s") { model.adjustSyncOffset(by: -0.1) }
@@ -200,5 +212,18 @@ struct PillContextMenu: View {
         Divider()
         Button("Settings…") { model.openSettings?() }
         Button("Quit Verse") { NSApp.terminate(nil) }
+    }
+
+    /// Reads the panel's current display, writes a move to the picked one
+    /// (the panel controller owns the actual geometry change).
+    private var screenSelection: Binding<CGDirectDisplayID?> {
+        Binding(
+            get: { model.currentScreenID },
+            set: { picked in
+                guard let screen = NSScreen.screens.first(where: { $0.displayID == picked })
+                else { return }
+                model.moveToScreen?(screen)
+            }
+        )
     }
 }

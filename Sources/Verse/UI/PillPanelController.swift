@@ -176,11 +176,13 @@ final class PillPanelController {
         panel.orderFrontRegardless()
         installMonitors()
 
+        model.moveToScreen = { [weak self] screen in self?.move(to: screen) }
+
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil, queue: .main
         ) { [weak self] _ in
-            Task { @MainActor in self?.configureGeometry(for: PillPanelController.targetScreen()) }
+            Task { @MainActor in self?.screenParametersChanged() }
         }
     }
 
@@ -201,6 +203,12 @@ final class PillPanelController {
         let visible = PillLayout.visibleRectInPanelSpace(screen: screen)
         model.pillVisibleRect = visible
         model.pillMaxWidth = layout.pillMaxWidth(screen: screen)
+        model.currentScreenID = screen.displayID
+
+        // Read BEFORE anything writes the anchor: was the stored position
+        // captured on some OTHER display (or by a build that recorded none)?
+        let anchorIsForeign =
+            model.hasStoredPillAnchor && model.pillAnchorScreenID != screen.displayID
 
         if !model.hasStoredPillAnchor {
             if model.isFirstRunDemo {
@@ -228,7 +236,26 @@ final class PillPanelController {
                 y: f.minY
             )
         }
+        // Panel space is per-screen, so a foreign anchor's x means a different
+        // spot here — and when it lands inside this screen the clamp below is a
+        // no-op, which is exactly how the pill used to reappear stranded
+        // mid-screen. Re-park it on its own rail instead; the side and the
+        // parked height are the parts of the choice that transfer.
+        if anchorIsForeign { reparkOnRail(visible: visible) }
         model.clampPillAnchor()
+        model.notePillAnchorScreen(screen.displayID)
+    }
+
+    /// Move the pill back onto the rail it is anchored to, within `visible`.
+    /// The y is left to `clampPillAnchor()`.
+    private func reparkOnRail(visible: CGRect) {
+        guard model.pillAnchorMode != .center else { return }
+        model.pillAnchor = CGPoint(
+            x: PillLayout.railX(
+                side: model.pillAnchorMode, visible: visible, edgeMargin: layout.edgeMargin
+            ),
+            y: model.pillAnchor.y
+        )
     }
 
     /// The pill's current frame in panel space, derived from anchor/mode/width.
@@ -321,9 +348,58 @@ final class PillPanelController {
         model.exitBrowse()
     }
 
-    /// The screen the pill lives on: the one with the active menu bar, else the
-    /// first attached display.
+    // MARK: - Multi-screen
+
+    /// UserDefaults key for the display the user explicitly parked the pill on
+    /// (a `CGDirectDisplayID`). Absent until a screen is picked from the menu.
+    private static let screenIDKey = "verse.screenID"
+
+    /// Move the panel to `screen` (pill "Screen" menu) and remember the choice.
+    func move(to screen: NSScreen) {
+        // The card is anchored to the pill on the OLD screen; collapsing is the
+        // honest way to re-anchor it (the next click reopens it in place).
+        if model.uiState == .popup { collapse() }
+
+        if let id = screen.displayID {
+            UserDefaults.standard.set(id, forKey: Self.screenIDKey)
+        }
+        // The anchor belongs to the old screen's panel space, so
+        // `configureGeometry` re-parks it on the new screen's rail and records
+        // the move — same path a foreign anchor takes at launch.
+        configureGeometry(for: screen)
+        panel.orderFrontRegardless()
+    }
+
+    /// Displays attached/removed, rearranged, or resized (and dock/menu-bar
+    /// changes, which post the same notification). Re-resolves the host screen
+    /// — a disconnected preferred display falls back without being forgotten,
+    /// so re-plugging it brings the pill home.
+    private func screenParametersChanged() {
+        guard let screen = Self.targetScreen() else { return }
+        // These notifications fire in bursts and often with nothing relevant
+        // changed; only re-lay-out when the panel's screen or usable area moved.
+        let visible = PillLayout.visibleRectInPanelSpace(screen: screen)
+        guard screen.displayID != model.currentScreenID
+                || screen.frame != panel.frame
+                || visible != model.pillVisibleRect
+        else { return }
+        configureGeometry(for: screen)
+    }
+
+    /// The screen the pill lives on: the user's picked display when attached,
+    /// else the display its parked position was captured on, else the one with
+    /// the active menu bar, else the first attached display.
     static func targetScreen() -> NSScreen? {
-        NSScreen.main ?? NSScreen.screens.first
+        let screens = NSScreen.screens
+        let fallback = NSScreen.main ?? screens.first
+        let defaults = UserDefaults.standard
+        guard let chosen = ScreenPicker.resolve(
+            preferred: (defaults.object(forKey: screenIDKey) as? NSNumber)?.uint32Value,
+            anchored: defaults.string(forKey: "verse.pillAnchor")
+                .flatMap(PillAnchorRecord.parse)?.screenID,
+            candidates: screens.compactMap(\.displayID),
+            active: NSScreen.main?.displayID
+        ) else { return fallback }
+        return screens.first { $0.displayID == chosen } ?? fallback
     }
 }

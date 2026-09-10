@@ -43,9 +43,14 @@ One line of text in a capsule, ~13pt, horizontal padding 16pt, height 30pt.
   parked the pill. The pill center's screen third at drag-end picks the anchor:
   left third → left edge fixed (grows rightward), right third → right edge
   fixed (grows leftward), middle → centered symmetric. The persisted position
-  (`verse.pillAnchor`, "mode,x,y") is the anchor point, so the anchored edge
-  never moves as lines change. Clamped to `NSScreen.visibleFrame` (never under
-  the menu bar or dock).
+  (`verse.pillAnchor`, "mode,x,y,displayID" — `PillAnchorRecord`; the 3-field
+  form written before multi-screen support still parses, with an unknown
+  display) is the anchor point, so the anchored edge never moves as lines
+  change. Clamped to `NSScreen.visibleFrame` (never under the menu bar or
+  dock). The displayID is load-bearing: panel space is per-screen, so an
+  anchor restored on a display it wasn't captured on is re-parked on its rail
+  (keeping the parked height) instead of trusting coordinates that would strand
+  the pill mid-screen.
 - **States:** pre-first-line / plain / no lyrics → "♪ Title — Artist" dimmed
   (title cleaned of feat/remaster noise); singing → the active theme's
   animation; echo lines (text fully inside `(…)`/`[…]`) → italic serif at 75%
@@ -57,8 +62,17 @@ One line of text in a capsule, ~13pt, horizontal padding 16pt, height 30pt.
 - **Gestures:** drag anywhere (3pt threshold, manual global-space drag,
   position persists); click → popup; double-click → play/pause with a press
   bounce (ExclusiveGesture — double-click never opens the popup); right-click →
-  context menu (Theme submenu, Lyric timing ±0.1/±0.5/reset, Hide until next
-  song, Settings…, Quit).
+  context menu (Theme submenu, Screen submenu, Lyric timing ±0.1/±0.5/reset,
+  Hide until next song, Settings…, Quit).
+- **Screen (multi-display):** the Screen submenu appears only with 2+ displays
+  and lists `NSScreen.localizedName`, checkmarked on the panel's current
+  screen; picking one moves the panel there, re-parks the pill on the same
+  rail, and persists that display's `CGDirectDisplayID` under
+  `verse.screenID`. `ScreenPicker.resolve` (pure) decides the host screen at
+  launch and on `didChangeScreenParameters`: explicitly picked display, else
+  the display the parked anchor was captured on, else `NSScreen.main`, else the
+  first screen — the explicit preference is never cleared, so re-plugging that
+  display brings the pill back to it.
 
 ## The popup
 

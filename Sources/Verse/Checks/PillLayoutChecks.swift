@@ -142,6 +142,36 @@ func runPillLayoutChecks() {
         let r = layout.popupRect(pillFrame: pill, visible: visible)
         return approx(r.minX, 868)
     }
+
+    // MARK: - Persisted anchor record ("mode,x,y,displayID")
+
+    check("PillAnchorRecord: parses the record written today") {
+        guard let r = PillAnchorRecord.parse("trailing,2044.0,1235.0,1") else { return false }
+        return r.mode == .trailing && approx(r.anchor.x, 2044) && approx(r.anchor.y, 1235)
+            && r.screenID == 1
+    }
+    check("PillAnchorRecord: a legacy 3-field record parses with NO display") {
+        guard let r = PillAnchorRecord.parse("trailing,2044.0,1235.0") else { return false }
+        return r.mode == .trailing && r.screenID == nil
+    }
+    check("PillAnchorRecord: an unparsable display field reads as unknown") {
+        PillAnchorRecord.parse("leading,12.0,51.0,main")?.screenID == nil
+    }
+    check("PillAnchorRecord: round-trips through its string form") {
+        let r = PillAnchorRecord(mode: .leading, anchor: CGPoint(x: 12, y: 51), screenID: 7)
+        return PillAnchorRecord.parse(r.stringValue) == r
+    }
+    check("PillAnchorRecord: an unknown display writes the 3-field form") {
+        PillAnchorRecord(mode: .center, anchor: CGPoint(x: 1, y: 2), screenID: nil)
+            .stringValue == "center,1.0,2.0"
+    }
+    check("PillAnchorRecord: junk, wrong field counts and bad modes are rejected") {
+        PillAnchorRecord.parse("") == nil
+            && PillAnchorRecord.parse("trailing,2044.0") == nil
+            && PillAnchorRecord.parse("trailing,2044.0,1235.0,1,9") == nil
+            && PillAnchorRecord.parse("sideways,1.0,2.0") == nil
+            && PillAnchorRecord.parse("trailing,x,1235.0") == nil
+    }
 }
 
 private func approx(_ a: CGFloat, _ b: CGFloat, _ eps: CGFloat = 0.01) -> Bool {
