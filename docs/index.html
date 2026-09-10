@@ -320,7 +320,8 @@
           opacity 0.3s ease;
       }
 
-      .pill.dragging {
+      .pill.dragging,
+      .card.dragging {
         cursor: grabbing;
       }
 
@@ -398,6 +399,8 @@
         left: 0;
         top: 0;
         z-index: 55;
+        cursor: grab;
+        touch-action: none;
         width: 400px;
         border-radius: 22px;
         background: var(--glass);
@@ -1499,10 +1502,13 @@
           if (document.body.classList.contains("card-open")) placeCard();
         }
 
+        var frozenSide = null; /* keeps the card from flipping mid-drag */
+
         function placeCard() {
           var w = card.offsetWidth || 400;
           var h = card.offsetHeight || 250;
-          var below = py < window.innerHeight / 2;
+          var below =
+            frozenSide === null ? py < window.innerHeight / 2 : frozenSide;
           var left = Math.min(
             Math.max(px - w / 2, 12),
             window.innerWidth - w - 12
@@ -1595,6 +1601,41 @@
         pill.addEventListener("pointerup", function () {
           dragging = false;
           pill.classList.remove("dragging");
+        });
+
+        /* the card drags too — grab anywhere that isn't a control */
+        var cardDragging = false;
+
+        card.addEventListener("pointerdown", function (e) {
+          if (e.target.closest("button, .card-line.side, .scrub-track")) return;
+          cardDragging = true;
+          wasDrag = false;
+          startX = e.clientX;
+          startY = e.clientY;
+          startPX = px;
+          startPY = py;
+          frozenSide = py < window.innerHeight / 2;
+          card.setPointerCapture(e.pointerId);
+          card.classList.add("dragging");
+        });
+
+        card.addEventListener("pointermove", function (e) {
+          if (!cardDragging) return;
+          var dx = e.clientX - startX;
+          var dy = e.clientY - startY;
+          if (!wasDrag && Math.hypot(dx, dy) < 3) return;
+          wasDrag = true;
+          userDriven = true;
+          px = startPX + dx;
+          py = startPY + dy;
+          clampPill();
+          queueProximity();
+        });
+
+        card.addEventListener("pointerup", function () {
+          cardDragging = false;
+          frozenSide = null;
+          card.classList.remove("dragging");
         });
 
         /* ---- states ---- */
