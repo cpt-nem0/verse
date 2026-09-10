@@ -9,6 +9,42 @@ enum PillAnchorMode: String {
     case leading, center, trailing
 }
 
+/// The persisted pill position (`verse.pillAnchor`): anchor mode, the
+/// panel-space anchor point, and the display that point belongs to.
+///
+/// The display is load-bearing. Panel space is PER-SCREEN, so an anchor on its
+/// own is ambiguous: restoring one screen's coordinates on another parks the
+/// pill at an arbitrary spot, and when those coordinates happen to fall inside
+/// the new screen the clamp cannot catch it. Records written before
+/// multi-screen support have three fields and no display; `screenID` is then
+/// `nil` and the panel controller re-parks rather than trusting them.
+struct PillAnchorRecord: Equatable {
+    var mode: PillAnchorMode
+    var anchor: CGPoint
+    var screenID: CGDirectDisplayID?
+
+    /// "mode,x,y,displayID" — or "mode,x,y" while the display is unknown.
+    var stringValue: String {
+        let base = "\(mode.rawValue),\(anchor.x),\(anchor.y)"
+        guard let screenID else { return base }
+        return "\(base),\(screenID)"
+    }
+
+    /// Parses both forms; an unparsable display field reads as unknown.
+    static func parse(_ raw: String) -> PillAnchorRecord? {
+        let parts = raw.split(separator: ",")
+        guard parts.count == 3 || parts.count == 4,
+              let mode = PillAnchorMode(rawValue: String(parts[0])),
+              let x = Double(parts[1]), let y = Double(parts[2])
+        else { return nil }
+        return PillAnchorRecord(
+            mode: mode,
+            anchor: CGPoint(x: x, y: y),
+            screenID: parts.count == 4 ? CGDirectDisplayID(parts[3]) : nil
+        )
+    }
+}
+
 /// Geometry for the floating pill + popup. Every screen-space calculation lives
 /// here as a *pure* function so the coordinate math can be exercised by the
 /// `--checks` runner without a live `NSScreen`.

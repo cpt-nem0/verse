@@ -142,6 +142,19 @@ final class AppModel: ObservableObject {
     /// controller drop the pill at its default spot only once.
     private(set) var hasStoredPillAnchor = false
 
+    /// The display the panel currently occupies — checkmarked in the pill's
+    /// "Screen" menu. Written by the panel controller.
+    @Published var currentScreenID: CGDirectDisplayID?
+
+    /// The display whose panel space `pillAnchor`'s coordinates belong to,
+    /// persisted as the record's 4th field. `nil` for anchors written before
+    /// multi-screen support — unknown counts as foreign, so the controller
+    /// re-parks instead of restoring coordinates from who-knows-where.
+    private(set) var pillAnchorScreenID: CGDirectDisplayID?
+
+    /// Set by the panel controller: move the panel (and the pill) to a display.
+    var moveToScreen: (@MainActor (NSScreen) -> Void)?
+
     /// True while the AppKit drag tracker is moving the pill — views suspend
     /// the anchor spring so the pill follows the pointer 1:1.
     @Published var isDraggingPill = false
@@ -211,19 +224,18 @@ final class AppModel: ObservableObject {
         // when nothing was persisted yet.
         var restoredAnchor = CGPoint.zero
         var restoredMode = PillAnchorMode.center
+        var restoredScreen: CGDirectDisplayID?
         var restored = false
-        if let saved = defaults.string(forKey: "verse.pillAnchor") {
-            let parts = saved.split(separator: ",").map(String.init)
-            if parts.count == 3,
-               let mode = PillAnchorMode(rawValue: parts[0]),
-               let x = Double(parts[1]), let y = Double(parts[2]) {
-                restoredAnchor = CGPoint(x: x, y: y)
-                restoredMode = mode
-                restored = true
-            }
+        if let saved = defaults.string(forKey: "verse.pillAnchor"),
+           let record = PillAnchorRecord.parse(saved) {
+            restoredAnchor = record.anchor
+            restoredMode = record.mode
+            restoredScreen = record.screenID
+            restored = true
         }
         pillAnchor = restoredAnchor
         pillAnchorMode = restoredMode
+        pillAnchorScreenID = restoredScreen
         hasStoredPillAnchor = restored
         // Pre-revision-A key (top-left "x,y") is dead — a fresh default is fine.
         defaults.removeObject(forKey: "verse.pillOrigin")
@@ -246,9 +258,20 @@ final class AppModel: ObservableObject {
     private func persistAnchor() {
         hasStoredPillAnchor = true
         UserDefaults.standard.set(
-            "\(pillAnchorMode.rawValue),\(pillAnchor.x),\(pillAnchor.y)",
+            PillAnchorRecord(
+                mode: pillAnchorMode, anchor: pillAnchor, screenID: pillAnchorScreenID
+            ).stringValue,
             forKey: "verse.pillAnchor"
         )
+    }
+
+    /// The panel controller vouches that `pillAnchor` is expressed in `id`'s
+    /// panel space (it re-parked the pill if the stored anchor came from
+    /// another display), so the record can name that display.
+    func notePillAnchorScreen(_ id: CGDirectDisplayID?) {
+        guard pillAnchorScreenID != id else { return }
+        pillAnchorScreenID = id
+        persistAnchor()
     }
 
     /// Clamp `pillAnchor` so the whole pill (at its current width and anchor
